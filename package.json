@@ -1,0 +1,11 @@
+{
+  "name": "karis-metas",
+  "version": "1.0.0",
+  "description": "Plataforma de performance e gamificacao de vendas",
+  "scripts": {
+    "start": "serve -s . -l ${PORT:-3000}"
+  },
+  "dependencies": {
+    "serve": "^14.2.3"
+  }
+}
