@@ -1052,6 +1052,7 @@ function App() {
           vendors=${vendors}
           setVendors=${setVendors}
           lojas=${lojas}
+          tenant=${tenant}
           onClose=${() => setShowAdmin(false)}
         />
       `}
@@ -1135,18 +1136,22 @@ function LoginPage({ vendors, onSession, tenant, lojas }) {
   const [adminPwd,  setAdminPwd]  = useState('');
   const [err,       setErr]       = useState('');
 
+  // Usa senhas do tenant carregado do banco; fallback para constantes hardcoded (demo/offline)
+  const vendorPwd = tenant?.vendor_pass || VENDOR_PWD;
+  const adminPwd_ = tenant?.admin_pass  || ADMIN_PWD;
+
   const switchTab = t => { setTab(t); setErr(''); setPwd(''); setAdminPwd(''); };
 
   function enterVendor() {
-    if (!selVendor)          { setErr('Selecione seu nome na lista.'); return; }
-    if (!pwd)                { setErr('Digite sua senha de acesso.'); return; }
-    if (pwd !== VENDOR_PWD)  { setErr('Senha incorreta. Verifique com seu gerente.'); return; }
+    if (!selVendor)           { setErr('Selecione seu nome na lista.'); return; }
+    if (!pwd)                 { setErr('Digite sua senha de acesso.'); return; }
+    if (pwd !== vendorPwd)    { setErr('Senha incorreta. Verifique com seu gerente.'); return; }
     onSession({ role: 'vendor', name: selVendor });
   }
 
   function enterAdmin() {
-    if (!adminPwd)            { setErr('Digite a senha de administrador.'); return; }
-    if (adminPwd === ADMIN_PWD) { onSession({ role: 'admin', name: 'Admin' }); }
+    if (!adminPwd)              { setErr('Digite a senha de administrador.'); return; }
+    if (adminPwd === adminPwd_) { onSession({ role: 'admin', name: 'Admin' }); }
     else setErr('Senha incorreta. Tente novamente.');
   }
 
@@ -1561,9 +1566,10 @@ function ChallengesPage({ vendors, quizAns, setQuizAns, checkins, setCheckins, s
 }
 
 /* ─── AdminModal ──────────────────────────────── */
-// BUG FIX: agora recebe `lojas` como prop (antes usava variável `LOJAS` indefinida)
-function AdminModal({ vendors, setVendors, lojas, onClose }) {
-  const [draft,  setDraft]  = useState(() =>
+function AdminModal({ vendors, setVendors, lojas, tenant, onClose }) {
+  const adminPass = tenant?.admin_pass || ADMIN_PWD;
+
+  const [draft,    setDraft]    = useState(() =>
     vendors.reduce((acc, v) => ({
       ...acc,
       [v.id]: {
@@ -1573,15 +1579,21 @@ function AdminModal({ vendors, setVendors, lojas, onClose }) {
       },
     }), {})
   );
-  const [saved,  setSaved]  = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [saved,    setSaved]    = useState(false);
+  const [saving,   setSaving]   = useState(false);
+  const [err,      setErr]      = useState('');
+  const [newName,  setNewName]  = useState('');
+  const [newLoja,  setNewLoja]  = useState('');
+  const [newTipo,  setNewTipo]  = useState('vend');
+  const [adding,   setAdding]   = useState(false);
+  const [deleting, setDeleting] = useState(null);
 
   const upd = useCallback((id, field, val) => {
     setDraft(p => ({ ...p, [id]: { ...p[id], [field]: val } }));
   }, []);
 
   function previewPct(id, v) {
-    const d = draft[id];
+    const d = draft[id] || { sales:0, goal:0, inatives:0, inatives_goal:0 };
     if (v.tipo === 'fin') {
       const n = Number(d.inatives) || 0, g = Number(d.inatives_goal) || 0;
       return g > 0 ? Math.round((n / g) * 100) : 0;
@@ -1591,9 +1603,10 @@ function AdminModal({ vendors, setVendors, lojas, onClose }) {
   }
 
   async function save() {
+    setErr('');
     setSaving(true);
     const updated = vendors.map(v => {
-      const d = draft[v.id];
+      const d = draft[v.id] || { sales:0, goal:0, inatives:0, inatives_goal:0, nps:0, nps_goal:0 };
       return {
         ...v,
         sales:         Math.max(0, Number(d.sales)         || 0),
@@ -1606,16 +1619,29 @@ function AdminModal({ vendors, setVendors, lojas, onClose }) {
     });
 
     if (!IS_DEMO && sb && TENANT_ID) {
-      for (const v of updated) {
-        await sb.from('vendors').update({
-          sales: v.sales, goal: v.goal,
-          inatives: v.inatives, inatives_goal: v.inatives_goal,
-          nps: v.nps, nps_goal: v.nps_goal,
-        }).eq('id', v.id).eq('tenant_id', TENANT_ID);
+      try {
+        for (const v of updated) {
+          await sb.rpc('km_update_vendor_stats', {
+            p_tenant_id:     TENANT_ID,
+            p_admin_pass:    adminPass,
+            p_vendor_id:     v.id,
+            p_sales:         v.sales,
+            p_goal:          v.goal,
+            p_inatives:      v.inatives,
+            p_inatives_goal: v.inatives_goal,
+            p_nps:           v.nps,
+            p_nps_goal:      v.nps_goal,
+          });
+        }
+        const now = new Date();
+        const at = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        await sb.from('settings').update({ value: at }).eq('key', 'updated_at').eq('tenant_id', TENANT_ID);
+      } catch(e) {
+        console.error('[Karis Meta] Erro ao salvar:', e);
+        setErr('Erro ao salvar: ' + (e.message || 'tente novamente.'));
+        setSaving(false);
+        return;
       }
-      const now = new Date();
-      const at = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      await sb.from('settings').update({ value: at }).eq('key', 'updated_at').eq('tenant_id', TENANT_ID);
     }
 
     setVendors(updated);
@@ -1624,7 +1650,55 @@ function AdminModal({ vendors, setVendors, lojas, onClose }) {
     setTimeout(() => setSaved(false), 2500);
   }
 
-  // Usa lojas passadas como prop (bug fix — antes era LOJAS indefinido)
+  async function addVendor() {
+    if (!newName.trim()) { setErr('Informe o nome do colaborador.'); return; }
+    if (!newLoja)        { setErr('Selecione a loja.'); return; }
+    setErr(''); setAdding(true);
+    try {
+      const { data, error } = await sb.rpc('km_admin_create_vendor', {
+        p_tenant_id:  TENANT_ID,
+        p_admin_pass: adminPass,
+        p_name:       newName.trim(),
+        p_loja:       newLoja,
+        p_tipo:       newTipo,
+      });
+      if (error) throw new Error(error.message);
+      const newV = {
+        id:            data.id,
+        tenant_id:     TENANT_ID,
+        name:          newName.trim(),
+        loja:          newLoja,
+        tipo:          newTipo,
+        sales:0, goal:0, inatives:0, inatives_goal:0, nps:0, nps_goal:0,
+      };
+      setVendors(p => [...p, newV]);
+      setDraft(p => ({ ...p, [newV.id]: { sales:0, goal:0, inatives:0, inatives_goal:0, nps:0, nps_goal:0 } }));
+      setNewName(''); setNewLoja(''); setNewTipo('vend');
+    } catch(e) {
+      setErr('Erro ao adicionar: ' + e.message);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function deleteVendor(v) {
+    setDeleting(v.id);
+    try {
+      const { error } = await sb.rpc('km_admin_delete_vendor', {
+        p_tenant_id:  TENANT_ID,
+        p_admin_pass: adminPass,
+        p_vendor_id:  v.id,
+      });
+      if (error) throw new Error(error.message);
+      setVendors(p => p.filter(x => x.id !== v.id));
+      setDraft(p => { const n = {...p}; delete n[v.id]; return n; });
+    } catch(e) {
+      setErr('Erro ao remover: ' + e.message);
+    } finally {
+      setDeleting(null);
+    }
+  }
+
   const lojasFiltradas = (lojas || LOJAS_DEMO).filter(l => l.id !== 'all');
 
   return html`
@@ -1635,72 +1709,151 @@ function AdminModal({ vendors, setVendors, lojas, onClose }) {
           <button className="modal-x" onClick=${onClose}>✕</button>
         </div>
         <div className="modal-body">
+          ${err && html`
+            <div style=${{ fontSize:12, color:'#EF4444', padding:'8px 12px',
+              background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.15)',
+              borderRadius:7, marginBottom:12 }}>
+              ${err}
+            </div>`}
           <p className="modal-hint">Insira os resultados e metas de cada colaborador</p>
           ${lojasFiltradas.map(l => {
             const grp = vendors.filter(v => v.loja === l.id);
-            if (!grp.length) return null;
             return html`
               <div key=${l.id} className="admin-store-section">
                 <div className="admin-store-label" style=${{ color: l.color }}>${l.label}</div>
-                ${grp.map(v => {
-                  const d   = draft[v.id];
-                  const pp  = previewPct(v.id, v);
-                  const fin = v.tipo === 'fin';
-                  return html`
-                    <div key=${v.id} className="admin-vcard">
-                      <div className="admin-vcard-name">
-                        <span>
-                          ${v.name}
-                          ${fin && html`<span className="fin-badge">FIN</span>`}
-                        </span>
-                        <span className=${'admin-vcard-pct ' + pctCls(pp)}>${pp}%</span>
-                      </div>
-                      <div className="admin-row">
-                        ${fin ? html`
-                          <div className="admin-field">
-                            <span className="admin-field-label">Inativos</span>
-                            <input className="admin-input" type="number" min="0"
-                              value=${d.inatives}
-                              onInput=${e => upd(v.id, 'inatives', e.target.value)} />
+                ${grp.length === 0
+                  ? html`<p style=${{ fontSize:12, color:'var(--muted)', marginBottom:8 }}>Nenhum colaborador nesta loja.</p>`
+                  : grp.map(v => {
+                    const d   = draft[v.id] || { sales:0, goal:0, inatives:0, inatives_goal:0, nps:0, nps_goal:0 };
+                    const pp  = previewPct(v.id, v);
+                    const fin = v.tipo === 'fin';
+                    return html`
+                      <div key=${v.id} className="admin-vcard">
+                        <div className="admin-vcard-name">
+                          <span>
+                            ${v.name}
+                            ${fin && html`<span className="fin-badge">FIN</span>`}
+                          </span>
+                          <div style=${{ display:'flex', alignItems:'center', gap:6 }}>
+                            <span className=${'admin-vcard-pct ' + pctCls(pp)}>${pp}%</span>
+                            ${!IS_DEMO && html`
+                              <button
+                                style=${{
+                                  width:22, height:22, border:'1px solid rgba(239,68,68,0.25)',
+                                  borderRadius:5, background:'transparent', cursor:'pointer',
+                                  fontSize:13, color:'#EF4444', display:'flex',
+                                  alignItems:'center', justifyContent:'center', lineHeight:1,
+                                }}
+                                title="Remover colaborador"
+                                disabled=${deleting === v.id}
+                                onClick=${() => deleteVendor(v)}>
+                                ${deleting === v.id ? '…' : '×'}
+                              </button>`}
                           </div>
-                          <div className="admin-field">
-                            <span className="admin-field-label">Meta</span>
-                            <input className="admin-input" type="number" min="0"
-                              value=${d.inatives_goal}
-                              onInput=${e => upd(v.id, 'inatives_goal', e.target.value)} />
-                          </div>
-                        ` : html`
-                          <div className="admin-field">
-                            <span className="admin-field-label">Vendas</span>
-                            <input className="admin-input" type="number" min="0"
-                              value=${d.sales}
-                              onInput=${e => upd(v.id, 'sales', e.target.value)} />
-                          </div>
-                          <div className="admin-field">
-                            <span className="admin-field-label">Meta</span>
-                            <input className="admin-input" type="number" min="0"
-                              value=${d.goal}
-                              onInput=${e => upd(v.id, 'goal', e.target.value)} />
-                          </div>
-                        `}
-                        <div className="admin-divider-v"></div>
-                        <div className="admin-field">
-                          <span className="admin-field-label">NPS</span>
-                          <input className="admin-input" type="number" min="0" max="100"
-                            value=${d.nps}
-                            onInput=${e => upd(v.id, 'nps', e.target.value)} />
                         </div>
-                        <div className="admin-field">
-                          <span className="admin-field-label">Meta NPS</span>
-                          <input className="admin-input" type="number" min="0" max="100"
-                            value=${d.nps_goal}
-                            onInput=${e => upd(v.id, 'nps_goal', e.target.value)} />
+                        <div className="admin-row">
+                          ${fin ? html`
+                            <div className="admin-field">
+                              <span className="admin-field-label">Inativos</span>
+                              <input className="admin-input" type="number" min="0"
+                                value=${d.inatives}
+                                onInput=${e => upd(v.id, 'inatives', e.target.value)} />
+                            </div>
+                            <div className="admin-field">
+                              <span className="admin-field-label">Meta</span>
+                              <input className="admin-input" type="number" min="0"
+                                value=${d.inatives_goal}
+                                onInput=${e => upd(v.id, 'inatives_goal', e.target.value)} />
+                            </div>
+                          ` : html`
+                            <div className="admin-field">
+                              <span className="admin-field-label">Vendas</span>
+                              <input className="admin-input" type="number" min="0"
+                                value=${d.sales}
+                                onInput=${e => upd(v.id, 'sales', e.target.value)} />
+                            </div>
+                            <div className="admin-field">
+                              <span className="admin-field-label">Meta</span>
+                              <input className="admin-input" type="number" min="0"
+                                value=${d.goal}
+                                onInput=${e => upd(v.id, 'goal', e.target.value)} />
+                            </div>
+                          `}
+                          <div className="admin-divider-v"></div>
+                          <div className="admin-field">
+                            <span className="admin-field-label">NPS</span>
+                            <input className="admin-input" type="number" min="0" max="100"
+                              value=${d.nps}
+                              onInput=${e => upd(v.id, 'nps', e.target.value)} />
+                          </div>
+                          <div className="admin-field">
+                            <span className="admin-field-label">Meta NPS</span>
+                            <input className="admin-input" type="number" min="0" max="100"
+                              value=${d.nps_goal}
+                              onInput=${e => upd(v.id, 'nps_goal', e.target.value)} />
+                          </div>
                         </div>
-                      </div>
-                    </div>`;
-                })}
+                      </div>`;
+                  })}
               </div>`;
           })}
+
+          ${!IS_DEMO && html`
+            <div style=${{
+              marginTop:16, padding:'14px', background:'var(--s2)',
+              borderRadius:10, border:'1px solid var(--border)',
+            }}>
+              <div style=${{ fontSize:12, fontWeight:600, color:'var(--text)', marginBottom:10 }}>
+                + Adicionar colaborador
+              </div>
+              <div style=${{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:8 }}>
+                <div>
+                  <div style=${{ fontSize:11, fontWeight:600, color:'var(--muted)', textTransform:'uppercase', letterSpacing:.5, marginBottom:4 }}>Nome</div>
+                  <input
+                    style=${{ width:'100%', padding:'8px 10px', background:'var(--s1)',
+                      border:'1px solid var(--border-mid)', borderRadius:7, fontSize:12,
+                      fontFamily:"'Inter',sans-serif", outline:'none', color:'var(--text)' }}
+                    type="text" placeholder="Nome completo"
+                    value=${newName} onInput=${e => setNewName(e.target.value)} />
+                </div>
+                <div>
+                  <div style=${{ fontSize:11, fontWeight:600, color:'var(--muted)', textTransform:'uppercase', letterSpacing:.5, marginBottom:4 }}>Loja</div>
+                  <select
+                    style=${{ width:'100%', padding:'8px 10px', background:'var(--s1)',
+                      border:'1px solid var(--border-mid)', borderRadius:7, fontSize:12,
+                      fontFamily:"'Inter',sans-serif", outline:'none', color:'var(--text)' }}
+                    value=${newLoja} onChange=${e => setNewLoja(e.target.value)}>
+                    <option value="">Selecione...</option>
+                    ${lojasFiltradas.map(l => html`<option key=${l.id} value=${l.id}>${l.label}</option>`)}
+                  </select>
+                </div>
+                <div>
+                  <div style=${{ fontSize:11, fontWeight:600, color:'var(--muted)', textTransform:'uppercase', letterSpacing:.5, marginBottom:4 }}>Tipo</div>
+                  <select
+                    style=${{ width:'100%', padding:'8px 10px', background:'var(--s1)',
+                      border:'1px solid var(--border-mid)', borderRadius:7, fontSize:12,
+                      fontFamily:"'Inter',sans-serif", outline:'none', color:'var(--text)' }}
+                    value=${newTipo} onChange=${e => setNewTipo(e.target.value)}>
+                    <option value="vend">Vendedor</option>
+                    <option value="fin">Financeiro</option>
+                  </select>
+                </div>
+              </div>
+              <div style=${{ display:'flex', justifyContent:'flex-end' }}>
+                <button
+                  style=${{
+                    padding:'7px 14px', borderRadius:7, border:'none',
+                    background:'var(--accent)', color:'#fff', cursor:'pointer',
+                    fontFamily:"'Inter',sans-serif", fontSize:12, fontWeight:600,
+                    opacity: adding ? .6 : 1,
+                  }}
+                  disabled=${adding}
+                  onClick=${addVendor}>
+                  ${adding ? 'Adicionando...' : '+ Adicionar'}
+                </button>
+              </div>
+            </div>`}
+
           <button
             className=${'modal-save' + (saved ? ' saved' : '')}
             disabled=${saving}

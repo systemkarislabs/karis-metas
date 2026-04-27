@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Karis Metas — Super Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:         #F7F8FA;
+      --s1:         #FFFFFF;
+      --s2:         #F1F3F7;
+      --s3:         #E5E8EF;
+      --text:       #0F172A;
+      --muted:      #64748B;
+      --border:     rgba(15,23,42,0.07);
+      --border-mid: rgba(15,23,42,0.13);
+      --accent:     #7C3AED;
+      --accent-d:   #6D28D9;
+      --accent-lt:  rgba(124,58,237,0.07);
+      --danger:     #EF4444;
+      --danger-lt:  rgba(239,68,68,0.07);
+      --success:    #16A34A;
+      --success-lt: rgba(22,163,74,0.07);
+      --warn:       #D97706;
+      --sidebar-w:  220px;
+      --r:          10px;
+      --r-lg:       14px;
+    }
+
+    html, body, #root { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body::after {
+      content: '';
+      position: fixed; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent), #A855F7);
+      z-index: 9999;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
+
+    /* ── LOGIN ── */
+    .login-wrap {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 2rem 1.25rem;
+    }
+    .login-card {
+      background: var(--s1);
+      border: 1px solid var(--border-mid);
+      border-radius: 18px;
+      padding: 2.25rem 2rem 2rem;
+      width: 100%; max-width: 380px;
+      box-shadow: 0 4px 28px rgba(15,23,42,0.09), 0 1px 3px rgba(15,23,42,0.04);
+    }
+    .login-head {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 8px; margin-bottom: 1.75rem;
+    }
+    .login-badge {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--accent); display: flex;
+      align-items: center; justify-content: center;
+    }
+    .login-badge span { color: #fff; font-size: 20px; font-weight: 800; }
+    .login-title { font-size: 16px; font-weight: 700; color: var(--text); }
+    .login-sub { font-size: 12px; color: var(--muted); letter-spacing: 0.3px; }
+    .login-divider { height: 1px; background: var(--border); margin-bottom: 1.5rem; }
+    .login-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+    .login-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .login-input {
+      width: 100%; padding: 10px 13px;
+      background: var(--s2); border: 1px solid var(--border-mid);
+      border-radius: 8px; font-size: 13px; color: var(--text);
+      font-family: 'Inter', sans-serif; outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .login-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,58,237,0.1); background: var(--s1); }
+    .login-err {
+      font-size: 12px; color: var(--danger);
+      padding: 8px 12px; background: var(--danger-lt);
+      border: 1px solid rgba(239,68,68,0.18); border-radius: 7px; margin-bottom: 10px;
+    }
+    .login-btn {
+      width: 100%; padding: 11px; border: none; border-radius: 8px;
+      background: var(--accent); color: #fff; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+      transition: all .2s; margin-top: 2px;
+    }
+    .login-btn:hover:not(:disabled) { background: var(--accent-d); box-shadow: 0 4px 14px rgba(124,58,237,0.25); transform: translateY(-1px); }
+    .login-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── LAYOUT ── */
+    .sidebar {
+      width: var(--sidebar-w); flex-shrink: 0;
+      background: var(--s1); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+    }
+    .sidebar-top {
+      height: 54px; display: flex; align-items: center; gap: 10px;
+      padding: 0 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .sb-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: var(--accent); display: flex;
+      align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .sb-icon span { color: #fff; font-size: 14px; font-weight: 800; }
+    .sb-brand { font-size: 13px; font-weight: 700; color: var(--text); }
+    .sb-brand small { display: block; font-size: 10px; font-weight: 400; color: var(--muted); margin-top: 1px; }
+    .sb-nav { flex: 1; padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; }
+    .sb-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; padding: 10px 10px 4px; opacity: .55; }
+    .sb-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 7px 10px; border-radius: 7px; border: none;
+      cursor: pointer; background: transparent; color: var(--muted);
+      font-size: 13px; font-family: 'Inter', sans-serif; text-align: left;
+      transition: all .15s; width: 100%;
+    }
+    .sb-item:hover { background: var(--s2); color: var(--text); }
+    .sb-item.active { background: var(--accent-lt); color: var(--accent); font-weight: 600; }
+    .sb-bottom { padding: 8px 8px 14px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .sb-logout {
+      width: 100%; padding: 7px 10px; border: none; border-radius: 7px;
+      background: transparent; color: var(--muted);
+      font-family: 'Inter', sans-serif; font-size: 13px;
+      cursor: pointer; text-align: left; transition: all .15s;
+    }
+    .sb-logout:hover { background: var(--danger-lt); color: var(--danger); }
+    .main-wrap { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar {
+      height: 54px; background: var(--s1); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 24px;
+      position: sticky; top: 0; z-index: 50; flex-shrink: 0;
+    }
+    .topbar-crumb { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .topbar-crumb strong { color: var(--text); font-weight: 600; }
+    .topbar-dot { opacity: .4; }
+    .topbar-badge {
+      margin-left: auto; padding: 3px 10px; border-radius: 20px;
+      background: var(--accent-lt); color: var(--accent);
+      font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+    }
+    .page-content { padding: 24px; flex: 1; }
+
+    /* ── CARDS STATS ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--s1); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 18px 20px;
+    }
+    .stat-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .stat-val { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1.1; }
+    .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* ── TABLE ── */
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .section-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .section-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .tbl-wrap {
+      background: var(--s1); border: 1px solid var(--border);
+      border-radius: var(--r-lg); overflow: hidden;
+    }
+    .tbl { width: 100%; border-collapse: collapse; }
+    .tbl thead th {
+      background: var(--s2); padding: 10px 16px;
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-align: left; text-transform: uppercase; letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tbl tbody tr { transition: background .1s; }
+    .tbl tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+    .tbl tbody tr:hover td { background: var(--s2); }
+    .tbl td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
+    .tbl-name { font-weight: 600; color: var(--text); }
+    .tbl-id { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: monospace; }
+    .tbl-empty { padding: 40px; text-align: center; color: var(--muted); font-size: 13px; }
+    .loja-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .loja-chip {
+      padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
+      white-space: nowrap;
+    }
+    .tbl-actions { display: flex; align-items: center; gap: 6px; }
+    .btn-icon {
+      width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border-mid);
+      background: var(--s1); cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: 14px; transition: all .15s; color: var(--muted);
+      flex-shrink: 0;
+    }
+    .btn-icon:hover { background: var(--s2); color: var(--text); border-color: var(--border-mid); }
+    .btn-icon.danger:hover { background: var(--danger-lt); color: var(--danger); border-color: rgba(239,68,68,0.25); }
+    .btn-icon.accent:hover { background: var(--accent-lt); color: var(--accent); border-color: rgba(124,58,237,0.25); }
+    .btn-icon.success:hover { background: var(--success-lt); color: var(--success); border-color: rgba(22,163,74,0.25); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+      transition: all .2s; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-d); box-shadow: 0 4px 12px rgba(124,58,237,0.22); }
+    .btn-ghost { background: var(--s1); color: var(--text); border: 1px solid var(--border-mid); }
+    .btn-ghost:hover:not(:disabled) { background: var(--s2); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover:not(:disabled) { background: #DC2626; box-shadow: 0 4px 12px rgba(239,68,68,0.22); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* ── MODALS ── */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,0.35);
+      backdrop-filter: blur(3px); z-index: 200;
+      display: flex; align-items: flex-start; justify-content: center;
+      overflow-y: auto; padding: 2rem 1rem;
+    }
+    .modal {
+      background: var(--s1); border-radius: 18px;
+      width: 100%; max-width: 560px;
+      box-shadow: 0 20px 60px rgba(15,23,42,0.18);
+      animation: modal-in .2s ease;
+      margin: auto;
+    }
+    .modal-lg { max-width: 700px; }
+    @keyframes modal-in { from { opacity:0; transform: translateY(-12px) scale(.98); } to { opacity:1; transform: none; } }
+    .modal-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px 0;
+    }
+    .modal-ttl { font-size: 15px; font-weight: 700; color: var(--text); }
+    .modal-x {
+      width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border-mid);
+      background: var(--s1); cursor: pointer; font-size: 14px; color: var(--muted);
+      display: flex; align-items: center; justify-content: center; transition: all .15s;
+    }
+    .modal-x:hover { background: var(--s2); color: var(--text); }
+    .modal-body { padding: 16px 22px 22px; }
+    .modal-divider { height: 1px; background: var(--border); margin: 14px 0; }
+    .modal-foot {
+      display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+      padding-top: 16px; border-top: 1px solid var(--border);
+    }
+
+    /* ── FORM ── */
+    .form-grid { display: grid; gap: 12px; }
+    .form-grid-2 { grid-template-columns: 1fr 1fr; }
+    .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-field { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-input, .form-select {
+      padding: 9px 12px; background: var(--s2);
+      border: 1px solid var(--border-mid); border-radius: 8px;
+      font-size: 13px; color: var(--text); font-family: 'Inter', sans-serif;
+      outline: none; transition: border-color .2s, box-shadow .2s;
+      width: 100%;
+    }
+    .form-input:focus, .form-select:focus {
+      border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,58,237,0.08); background: var(--s1);
+    }
+    .form-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .form-err { font-size: 12px; color: var(--danger); padding: 8px 12px; background: var(--danger-lt); border: 1px solid rgba(239,68,68,0.18); border-radius: 7px; margin-bottom: 8px; }
+
+    /* ── LOJAS EDITOR ── */
+    .lojas-section { margin-top: 8px; }
+    .lojas-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .lojas-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .loja-row {
+      display: grid; grid-template-columns: 1fr 1fr auto auto 28px;
+      gap: 6px; align-items: center; padding: 8px 10px;
+      background: var(--s2); border-radius: 8px; margin-bottom: 6px;
+      border: 1px solid var(--border);
+    }
+    .loja-row input[type="color"] {
+      width: 36px; height: 30px; border-radius: 6px;
+      border: 1px solid var(--border-mid); cursor: pointer; padding: 2px;
+      background: var(--s1);
+    }
+    .loja-del {
+      width: 28px; height: 28px; border-radius: 6px; border: none;
+      background: transparent; cursor: pointer; color: var(--muted);
+      font-size: 15px; display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .loja-del:hover { background: var(--danger-lt); color: var(--danger); }
+    .loja-input-sm {
+      padding: 6px 8px; background: var(--s1);
+      border: 1px solid var(--border); border-radius: 6px;
+      font-size: 12px; color: var(--text); font-family: 'Inter', sans-serif;
+      outline: none; transition: border-color .15s; width: 100%;
+    }
+    .loja-input-sm:focus { border-color: var(--accent); }
+
+    /* ── VENDORS MODAL ── */
+    .vendor-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; max-height: 340px; overflow-y: auto; }
+    .vendor-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; background: var(--s2); border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .vendor-av {
+      width: 30px; height: 30px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; flex-shrink: 0;
+      border: 2px solid;
+    }
+    .vendor-name { font-size: 13px; font-weight: 600; flex: 1; }
+    .vendor-meta { font-size: 11px; color: var(--muted); }
+    .vendor-badge {
+      padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 600;
+      background: rgba(124,58,237,0.1); color: var(--accent);
+    }
+    .add-vendor-form {
+      padding: 14px; background: var(--s2); border-radius: 10px;
+      border: 1px solid var(--border); margin-top: 8px;
+    }
+    .add-vendor-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+
+    /* ── CONFIRM DIALOG ── */
+    .confirm-modal { max-width: 360px; }
+    .confirm-icon { font-size: 32px; text-align: center; margin-bottom: 10px; }
+    .confirm-msg { font-size: 13px; color: var(--text); text-align: center; margin-bottom: 4px; }
+    .confirm-sub { font-size: 12px; color: var(--muted); text-align: center; }
+
+    /* ── MISC ── */
+    .full-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 260px; gap: 14px; color: var(--muted); font-size: 13px; }
+    .spin {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 2px solid var(--s3); border-top-color: var(--accent);
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .link-btn {
+      color: var(--accent); text-decoration: none; font-size: 12px; font-weight: 500;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .link-btn:hover { text-decoration: underline; }
+    .empty-state { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 48px 24px; color: var(--muted); }
+    .empty-state-icon { font-size: 36px; opacity: .5; }
+    .empty-state-text { font-size: 14px; font-weight: 500; }
+    .empty-state-sub { font-size: 12px; }
+    .tag { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .tag-purple { background: rgba(124,58,237,0.1); color: var(--accent); }
+    .tag-green { background: rgba(22,163,74,0.1); color: var(--success); }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+const SUPABASE_URL = 'https://fmrfpgyijbrmcgflzhqs.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtcmZwZ3lpamJybWNnZmx6aHFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4OTU2NjUsImV4cCI6MjA5MjQ3MTY2NX0.zMBPgWRUZBbBW_CqO8UfGEHA59oKetmEQNWXI4JqGEQ';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+</script>
+
+<script type="text/javascript">
+const html = htm.bind(React.createElement);
+const { useState, useEffect, useCallback, useMemo } = React;
+
+/* ─── SHA-256 helper ──────────────────────────────── */
+async function sha256(message) {
+  const buf  = new TextEncoder().encode(message);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+/* ─── localStorage ────────────────────────────────── */
+const lsGet = (k,d) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):d; } catch{return d;} };
+const lsSet = (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch{} };
+const lsDel = (k)   => { try { localStorage.removeItem(k); } catch{} };
+
+/* ─── RPC helper ──────────────────────────────────── */
+async function rpc(fn, params) {
+  const { data, error } = await sb.rpc(fn, params);
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/* ─── Initials helper ─────────────────────────────── */
+const inits = n => (n || '?').split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+
+/* ─── App ─────────────────────────────────────────── */
+function App() {
+  const [token,   setToken]   = useState(() => lsGet('km-sa-token', null));
+  const [page,    setPage]    = useState('dashboard');
+  const [tenants, setTenants] = useState([]);
+  const [vendors, setVendors] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  async function loadData(tok) {
+    if (!tok) return;
+    setLoading(true);
+    try {
+      const [ts, vs] = await Promise.all([
+        rpc('km_list_tenants', { p_token: tok }),
+        sb.from('vendors').select('id,tenant_id,name,loja,tipo').then(r => r.data || []),
+      ]);
+      setTenants(Array.isArray(ts) ? ts : []);
+      setVendors(Array.isArray(vs) ? vs : []);
+    } catch(e) {
+      console.error('[SA] loadData:', e.message);
+      if (e.message.toLowerCase().includes('invalid') || e.message.toLowerCase().includes('expired')) {
+        doLogout();
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { if (token) loadData(token); }, [token]);
+
+  function doLogin(tok) {
+    lsSet('km-sa-token', tok);
+    setToken(tok);
+  }
+
+  function doLogout() {
+    lsDel('km-sa-token');
+    setToken(null);
+    setTenants([]);
+    setVendors([]);
+    setPage('dashboard');
+  }
+
+  if (!token) return html`<${LoginPage} onLogin=${doLogin} />`;
+
+  const vendorCounts = useMemo(() => {
+    const map = {};
+    vendors.forEach(v => { map[v.tenant_id] = (map[v.tenant_id] || 0) + 1; });
+    return map;
+  }, [vendors]);
+
+  return html`
+    <div style=${{ display:'flex', minHeight:'100vh' }}>
+      <${Sidebar} page=${page} setPage=${setPage} onLogout=${doLogout} />
+      <div class="main-wrap">
+        <${TopBar} page=${page} />
+        <div class="page-content">
+          ${loading
+            ? html`<div class="full-loading"><div class="spin"></div>Carregando dados...</div>`
+            : page === 'dashboard'
+              ? html`<${DashboardPage} tenants=${tenants} vendors=${vendors} vendorCounts=${vendorCounts} />`
+              : html`<${EmpresasPage}
+                  tenants=${tenants} vendors=${vendors}
+                  vendorCounts=${vendorCounts} token=${token}
+                  onReload=${() => loadData(token)}
+                />`
+          }
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ─── LoginPage ───────────────────────────────────── */
+function LoginPage({ onLogin }) {
+  const [user, setUser] = useState('');
+  const [pwd,  setPwd]  = useState('');
+  const [err,  setErr]  = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function doLogin(e) {
+    e.preventDefault();
+    if (!user.trim() || !pwd.trim()) { setErr('Preencha usuário e senha.'); return; }
+    setBusy(true); setErr('');
+    try {
+      const hash  = await sha256(pwd);
+      const token = await rpc('km_login_superadmin', { p_username: user.trim(), p_password_hash: hash });
+      if (!token) { setErr('Credenciais incorretas.'); return; }
+      onLogin(token);
+    } catch(e) {
+      setErr(e.message.includes('Invalid') ? 'Usuário ou senha incorretos.' : 'Erro ao conectar. Tente novamente.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return html`
+    <div class="login-wrap">
+      <form class="login-card" onSubmit=${doLogin}>
+        <div class="login-head">
+          <div class="login-badge"><span>K</span></div>
+          <div class="login-title">Karis Metas</div>
+          <div class="login-sub">Painel Super Administrador</div>
+        </div>
+        <div class="login-divider"></div>
+        ${err && html`<div class="login-err">${err}</div>`}
+        <div class="login-field">
+          <label class="login-label">Usuário</label>
+          <input class="login-input" type="text" placeholder="ex: ivan"
+            value=${user} onInput=${e => setUser(e.target.value)}
+            autocomplete="username" />
+        </div>
+        <div class="login-field">
+          <label class="login-label">Senha</label>
+          <input class="login-input" type="password" placeholder="••••••••"
+            value=${pwd} onInput=${e => setPwd(e.target.value)}
+            autocomplete="current-password" />
+        </div>
+        <button class="login-btn" type="submit" disabled=${busy}>
+          ${busy ? 'Entrando...' : '→ Entrar'}
+        </button>
+      </form>
+    </div>`;
+}
+
+/* ─── Sidebar ─────────────────────────────────────── */
+function Sidebar({ page, setPage, onLogout }) {
+  return html`
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="sb-icon"><span>K</span></div>
+        <div>
+          <div class="sb-brand">Karis Metas</div>
+          <small class="sb-brand small">Super Admin</small>
+        </div>
+      </div>
+      <nav class="sb-nav">
+        <div class="sb-label">Navegação</div>
+        <button class=${'sb-item' + (page === 'dashboard' ? ' active' : '')} onClick=${() => setPage('dashboard')}>
+          📊 Dashboard
+        </button>
+        <button class=${'sb-item' + (page === 'empresas' ? ' active' : '')} onClick=${() => setPage('empresas')}>
+          🏢 Empresas
+        </button>
+      </nav>
+      <div class="sb-bottom">
+        <button class="sb-logout" onClick=${onLogout}>↩ Sair</button>
+      </div>
+    </aside>`;
+}
+
+/* ─── TopBar ──────────────────────────────────────── */
+function TopBar({ page }) {
+  const labels = { dashboard: 'Dashboard', empresas: 'Empresas' };
+  return html`
+    <header class="topbar">
+      <div class="topbar-crumb">
+        <span>Karis Metas</span>
+        <span class="topbar-dot">·</span>
+        <strong>${labels[page] || page}</strong>
+      </div>
+      <span class="topbar-badge">⚡ Super Admin</span>
+    </header>`;
+}
+
+/* ─── DashboardPage ───────────────────────────────── */
+function DashboardPage({ tenants, vendors, vendorCounts }) {
+  const totalLojas = tenants.reduce((s, t) => s + (t.lojas?.length || 0), 0);
+
+  return html`
+    <div>
+      <div style=${{ marginBottom:20 }}>
+        <div style=${{ fontSize:18, fontWeight:700, color:'var(--text)' }}>Visão Geral</div>
+        <div style=${{ fontSize:13, color:'var(--muted)', marginTop:3 }}>Resumo da plataforma Karis Metas</div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">Empresas</div>
+          <div class="stat-val">${tenants.length}</div>
+          <div class="stat-sub">tenants cadastrados</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Vendedores</div>
+          <div class="stat-val">${vendors.length}</div>
+          <div class="stat-sub">em todas as empresas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Lojas</div>
+          <div class="stat-val">${totalLojas}</div>
+          <div class="stat-sub">unidades no total</div>
+        </div>
+      </div>
+
+      <div class="section-head">
+        <div>
+          <div class="section-title">Empresas Cadastradas</div>
+          <div class="section-sub">Acesse o ranking de cada empresa</div>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        ${tenants.length === 0
+          ? html`<div class="tbl-empty">Nenhuma empresa cadastrada ainda.</div>`
+          : html`<table class="tbl">
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Lojas</th>
+                <th>Vendedores</th>
+                <th>Link do Ranking</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tenants.map(t => html`
+                <tr key=${t.id}>
+                  <td>
+                    <div class="tbl-name">${t.name}</div>
+                    <div class="tbl-id">${t.id}</div>
+                  </td>
+                  <td>
+                    <div class="loja-chips">
+                      ${(t.lojas||[]).slice(0,3).map(l => html`
+                        <span key=${l.id} class="loja-chip"
+                          style=${{ background: l.color+'18', color: l.color }}>
+                          ${l.short || l.id}
+                        </span>`)}
+                      ${(t.lojas||[]).length > 3 && html`
+                        <span class="loja-chip" style=${{ background:'var(--s3)', color:'var(--muted)' }}>
+                          +${t.lojas.length-3}
+                        </span>`}
+                    </div>
+                  </td>
+                  <td>${vendorCounts[t.id] || 0}</td>
+                  <td>
+                    <a class="link-btn" href=${'./index.html?empresa='+t.id} target="_blank">
+                      ↗ Abrir ranking
+                    </a>
+                  </td>
+                </tr>`)}
+            </tbody>
+          </table>`}
+      </div>
+    </div>`;
+}
+
+/* ─── EmpresasPage ────────────────────────────────── */
+function EmpresasPage({ tenants, vendors, vendorCounts, token, onReload }) {
+  const [modalTenant, setModalTenant] = useState(null); // null=closed, {}=create, {…}=edit
+  const [vendorsTenant, setVendorsTenant] = useState(null); // tenant obj for vendors modal
+  const [confirmDel, setConfirmDel] = useState(null);  // tenant to delete
+  const [err, setErr] = useState('');
+
+  async function deleteTenant(t) {
+    try {
+      await rpc('km_delete_tenant', { p_token: token, p_id: t.id });
+      onReload();
+    } catch(e) {
+      setErr('Erro ao excluir: ' + e.message);
+    } finally {
+      setConfirmDel(null);
+    }
+  }
+
+  return html`
+    <div>
+      ${err && html`<div class="form-err" style=${{ marginBottom:14 }}>${err}</div>`}
+      <div class="section-head">
+        <div>
+          <div class="section-title">Empresas / Tenants</div>
+          <div class="section-sub">${tenants.length} empresa${tenants.length !== 1 ? 's' : ''} cadastrada${tenants.length !== 1 ? 's' : ''}</div>
+        </div>
+        <button class="btn btn-primary" onClick=${() => setModalTenant({})}>
+          + Nova Empresa
+        </button>
+      </div>
+
+      <div class="tbl-wrap">
+        ${tenants.length === 0
+          ? html`
+            <div class="empty-state">
+              <div class="empty-state-icon">🏢</div>
+              <div class="empty-state-text">Nenhuma empresa cadastrada</div>
+              <div class="empty-state-sub">Clique em "Nova Empresa" para começar</div>
+            </div>`
+          : html`
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>Lojas</th>
+                  <th>Vendedores</th>
+                  <th>Senhas</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tenants.map(t => html`
+                  <tr key=${t.id}>
+                    <td>
+                      <div style=${{ display:'flex', alignItems:'center', gap:10 }}>
+                        ${t.logo_url
+                          ? html`<img src=${t.logo_url} style=${{ height:28, maxWidth:60, objectFit:'contain', borderRadius:4 }} />`
+                          : html`
+                            <div style=${{
+                              width:30, height:30, borderRadius:8,
+                              background: t.cor || '#7C3AED',
+                              display:'flex', alignItems:'center', justifyContent:'center',
+                              color:'#fff', fontWeight:700, fontSize:13, flexShrink:0
+                            }}>${(t.name||'?')[0].toUpperCase()}</div>`}
+                        <div>
+                          <div class="tbl-name">${t.name}</div>
+                          <div class="tbl-id">${t.id}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="loja-chips">
+                        ${(t.lojas||[]).slice(0,3).map(l => html`
+                          <span key=${l.id} class="loja-chip"
+                            style=${{ background: l.color+'18', color: l.color }}>
+                            ${l.short || l.id}
+                          </span>`)}
+                        ${(t.lojas||[]).length > 3 && html`
+                          <span class="loja-chip" style=${{ background:'var(--s3)', color:'var(--muted)' }}>
+                            +${t.lojas.length-3}
+                          </span>`}
+                      </div>
+                    </td>
+                    <td>
+                      <span class="tag tag-purple">${vendorCounts[t.id] || 0} pessoas</span>
+                    </td>
+                    <td>
+                      <div style=${{ fontSize:11, color:'var(--muted)', lineHeight:1.7 }}>
+                        <div>Admin: <code style=${{ fontFamily:'monospace', color:'var(--text)' }}>${t.admin_pass || '—'}</code></div>
+                        <div>Vendedor: <code style=${{ fontFamily:'monospace', color:'var(--text)' }}>${t.vendor_pass || '—'}</code></div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="tbl-actions">
+                        <button class="btn-icon success" title="Gerenciar vendedores"
+                          onClick=${() => setVendorsTenant(t)}>👥</button>
+                        <button class="btn-icon accent" title="Editar empresa"
+                          onClick=${() => setModalTenant(t)}>✏</button>
+                        <a class="btn-icon" href=${'./index.html?empresa='+t.id} target="_blank" title="Ver ranking" style=${{ textDecoration:'none' }}>↗</a>
+                        <button class="btn-icon danger" title="Excluir empresa"
+                          onClick=${() => setConfirmDel(t)}>🗑</button>
+                      </div>
+                    </td>
+                  </tr>`)}
+              </tbody>
+            </table>`}
+      </div>
+
+      ${modalTenant !== null && html`
+        <${TenantModal}
+          tenant=${modalTenant}
+          token=${token}
+          onClose=${() => setModalTenant(null)}
+          onSaved=${() => { setModalTenant(null); onReload(); }}
+        />`}
+
+      ${vendorsTenant && html`
+        <${VendorsModal}
+          tenant=${vendorsTenant}
+          allVendors=${vendors.filter(v => v.tenant_id === vendorsTenant.id)}
+          token=${token}
+          onClose=${() => setVendorsTenant(null)}
+          onReload=${onReload}
+        />`}
+
+      ${confirmDel && html`
+        <${ConfirmDialog}
+          title="Excluir empresa?"
+          message="Tem certeza que deseja excluir ${confirmDel.name}?"
+          sub="Todos os vendedores e dados serão permanentemente removidos."
+          icon="⚠️"
+          onConfirm=${() => deleteTenant(confirmDel)}
+          onCancel=${() => setConfirmDel(null)}
+        />`}
+    </div>`;
+}
+
+/* ─── TenantModal ─────────────────────────────────── */
+function TenantModal({ tenant, token, onClose, onSaved }) {
+  const isEdit = !!(tenant && tenant.id);
+  const [form, setForm] = useState({
+    id:          tenant.id         || '',
+    name:        tenant.name       || '',
+    logo_url:    tenant.logo_url   || '',
+    cor:         tenant.cor        || '#7C3AED',
+    admin_pass:  tenant.admin_pass || '',
+    vendor_pass: tenant.vendor_pass|| '',
+  });
+  const [lojas, setLojas] = useState(
+    (tenant.lojas && tenant.lojas.length > 0)
+      ? tenant.lojas.map(l => ({ ...l }))
+      : [{ id:'', label:'', color:'#3B82F6', short:'' }]
+  );
+  const [saving, setSaving] = useState(false);
+  const [err,    setErr]    = useState('');
+
+  const upd = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  function updLoja(i, k, v) {
+    setLojas(p => { const n=[...p]; n[i]={...n[i],[k]:v}; return n; });
+  }
+  function addLoja() {
+    setLojas(p => [...p, { id:'', label:'', color:'#3B82F6', short:'' }]);
+  }
+  function removeLoja(i) {
+    setLojas(p => p.filter((_,idx) => idx !== i));
+  }
+
+  async function save() {
+    setErr('');
+    if (!form.name.trim())        { setErr('Nome da empresa é obrigatório.'); return; }
+    if (!isEdit && !form.id.trim()) { setErr('ID (slug) é obrigatório.'); return; }
+    if (!isEdit && !/^[a-z0-9-]+$/.test(form.id.trim())) { setErr('ID deve conter apenas letras minúsculas, números e hífens.'); return; }
+    if (!form.admin_pass.trim())  { setErr('Senha de admin é obrigatória.'); return; }
+    if (!form.vendor_pass.trim()) { setErr('Senha de vendedor é obrigatória.'); return; }
+    const lojasValidas = lojas.filter(l => l.id.trim() && l.label.trim());
+    if (lojasValidas.length === 0) { setErr('Adicione pelo menos uma loja.'); return; }
+    const lojasJson = JSON.stringify(lojasValidas);
+    setSaving(true);
+    try {
+      if (isEdit) {
+        await rpc('km_update_tenant', {
+          p_token:      token,
+          p_id:         form.id,
+          p_name:       form.name.trim(),
+          p_logo_url:   form.logo_url.trim(),
+          p_cor:        form.cor,
+          p_lojas:      lojasJson,
+          p_admin_pass: form.admin_pass.trim(),
+          p_vendor_pass:form.vendor_pass.trim(),
+        });
+      } else {
+        await rpc('km_create_tenant', {
+          p_token:      token,
+          p_id:         form.id.trim(),
+          p_name:       form.name.trim(),
+          p_logo_url:   form.logo_url.trim(),
+          p_cor:        form.cor,
+          p_lojas:      lojasJson,
+          p_admin_pass: form.admin_pass.trim(),
+          p_vendor_pass:form.vendor_pass.trim(),
+        });
+      }
+      onSaved();
+    } catch(e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return html`
+    <div class="overlay" onClick=${e => e.target === e.currentTarget && onClose()}>
+      <div class="modal modal-lg">
+        <div class="modal-hd">
+          <span class="modal-ttl">${isEdit ? '✏ Editar Empresa' : '+ Nova Empresa'}</span>
+          <button class="modal-x" onClick=${onClose}>✕</button>
+        </div>
+        <div class="modal-body">
+          ${err && html`<div class="form-err">${err}</div>`}
+
+          <div class="form-grid form-grid-2">
+            <div class="form-field" style=${{ gridColumn: isEdit ? 'auto' : '1' }}>
+              <label class="form-label">ID / Slug ${!isEdit && '(único, não pode alterar depois)'}</label>
+              <input class="form-input" type="text" placeholder="ex: minha-empresa"
+                value=${form.id} onInput=${e => upd('id', e.target.value)}
+                disabled=${isEdit} style=${isEdit ? { opacity:.5 } : {}} />
+              ${!isEdit && html`<span class="form-hint">Apenas letras minúsculas, números e hífens.</span>`}
+            </div>
+            <div class="form-field">
+              <label class="form-label">Nome da Empresa</label>
+              <input class="form-input" type="text" placeholder="ex: Texpar Malhas"
+                value=${form.name} onInput=${e => upd('name', e.target.value)} />
+            </div>
+          </div>
+
+          <div class="form-grid form-grid-2" style=${{ marginTop:10 }}>
+            <div class="form-field">
+              <label class="form-label">URL do Logo (opcional)</label>
+              <input class="form-input" type="url" placeholder="https://..."
+                value=${form.logo_url} onInput=${e => upd('logo_url', e.target.value)} />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Cor da Marca</label>
+              <div style=${{ display:'flex', gap:8, alignItems:'center' }}>
+                <input type="color" value=${form.cor}
+                  onInput=${e => upd('cor', e.target.value)}
+                  style=${{ width:44, height:38, border:'1px solid var(--border-mid)', borderRadius:8, cursor:'pointer', padding:3 }} />
+                <input class="form-input" type="text" placeholder="#7C3AED"
+                  value=${form.cor} onInput=${e => upd('cor', e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-grid form-grid-2" style=${{ marginTop:10 }}>
+            <div class="form-field">
+              <label class="form-label">Senha Admin</label>
+              <input class="form-input" type="text" placeholder="ex: admin2025"
+                value=${form.admin_pass} onInput=${e => upd('admin_pass', e.target.value)} />
+              <span class="form-hint">Usada pelos admins de loja para editar dados.</span>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Senha Vendedor</label>
+              <input class="form-input" type="text" placeholder="ex: vendas123"
+                value=${form.vendor_pass} onInput=${e => upd('vendor_pass', e.target.value)} />
+              <span class="form-hint">Usada pelos vendedores para ver o ranking.</span>
+            </div>
+          </div>
+
+          <div class="modal-divider"></div>
+
+          <div class="lojas-section">
+            <div class="lojas-head">
+              <span class="lojas-title">Lojas / Unidades</span>
+              <button class="btn btn-ghost btn-sm" onClick=${addLoja}>+ Adicionar loja</button>
+            </div>
+            <div style=${{ display:'grid', gridTemplateColumns:'2fr 2fr auto auto 28px', gap:6, padding:'0 0 6px', color:'var(--muted)', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:.5 }}>
+              <span>ID</span><span>Label</span><span>Cor</span><span>Short</span><span></span>
+            </div>
+            ${lojas.map((l, i) => html`
+              <div key=${i} class="loja-row">
+                <input class="loja-input-sm" type="text" placeholder="ex: centro"
+                  value=${l.id} onInput=${e => updLoja(i, 'id', e.target.value)} />
+                <input class="loja-input-sm" type="text" placeholder="ex: SC Centro"
+                  value=${l.label} onInput=${e => updLoja(i, 'label', e.target.value)} />
+                <input type="color" value=${l.color || '#3B82F6'}
+                  onInput=${e => updLoja(i, 'color', e.target.value)} />
+                <input class="loja-input-sm" type="text" placeholder="SC-C" maxlength="6"
+                  value=${l.short || ''} onInput=${e => updLoja(i, 'short', e.target.value)}
+                  style=${{ maxWidth:60 }} />
+                <button class="loja-del" onClick=${() => removeLoja(i)} title="Remover">×</button>
+              </div>`)}
+            ${lojas.length === 0 && html`
+              <div style=${{ fontSize:12, color:'var(--muted)', padding:'10px 0' }}>
+                Nenhuma loja adicionada. Clique em "+ Adicionar loja".
+              </div>`}
+          </div>
+
+          <div class="modal-foot">
+            <button class="btn btn-ghost" onClick=${onClose}>Cancelar</button>
+            <button class="btn btn-primary" onClick=${save} disabled=${saving}>
+              ${saving ? 'Salvando...' : isEdit ? '✓ Salvar alterações' : '+ Criar empresa'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ─── VendorsModal ────────────────────────────────── */
+function VendorsModal({ tenant, allVendors, token, onClose, onReload }) {
+  const [vendors, setVendors] = useState(allVendors);
+  const [form, setForm] = useState({ name:'', loja:'', tipo:'vend' });
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(null);
+  const [err, setErr] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const lojas = (tenant.lojas || []).filter(l => l.id !== 'all');
+  const upd = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  async function addVendor() {
+    if (!form.name.trim()) { setErr('Informe o nome.'); return; }
+    if (!form.loja)        { setErr('Selecione a loja.'); return; }
+    setErr(''); setSaving(true);
+    try {
+      const v = await rpc('km_create_vendor', {
+        p_token:     token,
+        p_tenant_id: tenant.id,
+        p_name:      form.name.trim(),
+        p_loja:      form.loja,
+        p_tipo:      form.tipo,
+      });
+      const newVendor = { id: v.id, tenant_id: tenant.id, name: form.name.trim(), loja: form.loja, tipo: form.tipo };
+      setVendors(p => [...p, newVendor]);
+      setForm({ name:'', loja:'', tipo:'vend' });
+      setSuccess('Vendedor adicionado!');
+      setTimeout(() => setSuccess(''), 2000);
+      onReload();
+    } catch(e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteVendor(v) {
+    setDeleting(v.id);
+    try {
+      await rpc('km_delete_vendor', { p_token: token, p_vendor_id: v.id });
+      setVendors(p => p.filter(x => x.id !== v.id));
+      onReload();
+    } catch(e) {
+      setErr(e.message);
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  const getLoja = id => lojas.find(l => l.id === id) || { color:'#94A3B8', label: id };
+
+  return html`
+    <div class="overlay" onClick=${e => e.target === e.currentTarget && onClose()}>
+      <div class="modal modal-lg">
+        <div class="modal-hd">
+          <span class="modal-ttl">👥 Vendedores — ${tenant.name}</span>
+          <button class="modal-x" onClick=${onClose}>✕</button>
+        </div>
+        <div class="modal-body">
+          ${err && html`<div class="form-err">${err}</div>`}
+          ${success && html`
+            <div style=${{ fontSize:12, color:'var(--success)', padding:'8px 12px', background:'var(--success-lt)', borderRadius:7, marginBottom:8, border:'1px solid rgba(22,163,74,.18)' }}>
+              ✓ ${success}
+            </div>`}
+
+          <div class="vendor-list">
+            ${vendors.length === 0
+              ? html`<div style=${{ fontSize:12, color:'var(--muted)', textAlign:'center', padding:'20px 0' }}>Nenhum vendedor ainda.</div>`
+              : vendors.map(v => {
+                const li = getLoja(v.loja);
+                return html`
+                  <div key=${v.id} class="vendor-row">
+                    <div class="vendor-av" style=${{ borderColor:li.color, color:li.color, background:li.color+'14' }}>
+                      ${inits(v.name)}
+                    </div>
+                    <div style=${{ flex:1 }}>
+                      <div class="vendor-name">${v.name}</div>
+                      <div class="vendor-meta" style=${{ color:li.color }}>${li.label}</div>
+                    </div>
+                    ${v.tipo === 'fin' && html`<span class="vendor-badge">FIN</span>`}
+                    <button
+                      class="btn-icon danger"
+                      title="Remover vendedor"
+                      disabled=${deleting === v.id}
+                      onClick=${() => deleteVendor(v)}>
+                      ${deleting === v.id ? '…' : '×'}
+                    </button>
+                  </div>`;
+              })}
+          </div>
+
+          <div class="add-vendor-form">
+            <div class="add-vendor-title">+ Adicionar novo colaborador</div>
+            <div class="form-grid form-grid-3">
+              <div class="form-field">
+                <label class="form-label">Nome</label>
+                <input class="form-input" type="text" placeholder="Nome completo"
+                  value=${form.name} onInput=${e => upd('name', e.target.value)} />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Loja</label>
+                <select class="form-select" value=${form.loja} onChange=${e => upd('loja', e.target.value)}>
+                  <option value="">Selecione...</option>
+                  ${lojas.map(l => html`<option key=${l.id} value=${l.id}>${l.label}</option>`)}
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" value=${form.tipo} onChange=${e => upd('tipo', e.target.value)}>
+                  <option value="vend">Vendedor</option>
+                  <option value="fin">Financeiro</option>
+                </select>
+              </div>
+            </div>
+            <div style=${{ marginTop:10, display:'flex', justifyContent:'flex-end' }}>
+              <button class="btn btn-primary btn-sm" onClick=${addVendor} disabled=${saving}>
+                ${saving ? 'Adicionando...' : '+ Adicionar'}
+              </button>
+            </div>
+          </div>
+
+          <div class="modal-foot">
+            <button class="btn btn-ghost" onClick=${onClose}>Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ─── ConfirmDialog ───────────────────────────────── */
+function ConfirmDialog({ title, message, sub, icon, onConfirm, onCancel }) {
+  return html`
+    <div class="overlay" onClick=${e => e.target === e.currentTarget && onCancel()}>
+      <div class="modal confirm-modal">
+        <div class="modal-body" style=${{ padding:'28px 24px 22px' }}>
+          <div class="confirm-icon">${icon || '⚠️'}</div>
+          <div class="confirm-msg" style=${{ fontWeight:600 }}>${title}</div>
+          <div class="confirm-msg" style=${{ marginTop:6, fontWeight:400 }}>${message}</div>
+          ${sub && html`<div class="confirm-sub" style=${{ marginTop:4 }}>${sub}</div>`}
+          <div style=${{ display:'flex', gap:8, justifyContent:'center', marginTop:20 }}>
+            <button class="btn btn-ghost" onClick=${onCancel}>Cancelar</button>
+            <button class="btn btn-danger" onClick=${onConfirm}>Confirmar exclusão</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(html`<${App} />`);
+</script>
+</body>
+</html>
