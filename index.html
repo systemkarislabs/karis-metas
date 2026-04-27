@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Karis Meta — Performance de Vendas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:          #F7F8FA;
+      --s1:          #FFFFFF;
+      --s2:          #F1F3F7;
+      --s3:          #E5E8EF;
+      --text:        #0F172A;
+      --muted:       #64748B;
+      --border:      rgba(15,23,42,0.07);
+      --border-mid:  rgba(15,23,42,0.13);
+      --accent:      #1E40AF;
+      --accent-lt:   rgba(30,64,175,0.06);
+      --above:       #16A34A;
+      --near:        #D97706;
+      --below:       #EF4444;
+      --fin:         #7C3AED;
+      --gold:        #D97706;
+      --silver:      #64748B;
+      --bronze:      #B45309;
+      --sidebar-w:   220px;
+      --r:           10px;
+      --r-lg:        14px;
+    }
+
+    html, body, #root { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Linha de acento no topo */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), #3B82F6);
+      z-index: 9999;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
+
+    /* ── LOGIN ──────────────────────────────────────── */
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.25rem;
+    }
+    .login-card {
+      background: var(--s1);
+      border: 1px solid var(--border-mid);
+      border-radius: 18px;
+      padding: 2rem 1.875rem 1.75rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 24px rgba(15,23,42,0.08), 0 1px 3px rgba(15,23,42,0.04);
+    }
+    .login-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 1.5rem;
+    }
+    .login-tenant-logo { width: 260px; height: auto; object-fit: contain; }
+    .login-tenant-name {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .login-subtitle {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      text-align: center;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+    .login-divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+    .login-tabs {
+      display: flex;
+      background: var(--s2);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 3px;
+      margin-bottom: 1.375rem;
+    }
+    .login-tab {
+      flex: 1;
+      padding: 8px 6px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .login-tab:hover { color: var(--text); }
+    .login-tab.active {
+      background: var(--s1);
+      color: var(--text);
+      font-weight: 600;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .login-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+    .login-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .login-select, .login-input {
+      width: 100%;
+      padding: 10px 13px;
+      background: var(--s2);
+      border: 1px solid var(--border-mid);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      appearance: none;
+    }
+    .login-select:focus, .login-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(30,64,175,0.08);
+      background: var(--s1);
+    }
+    .login-err {
+      font-size: 12px;
+      color: var(--below);
+      padding: 8px 12px;
+      background: rgba(239,68,68,0.06);
+      border: 1px solid rgba(239,68,68,0.15);
+      border-radius: 7px;
+      margin-bottom: 8px;
+    }
+    .login-btn {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all .2s;
+      margin-top: 4px;
+    }
+    .login-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .login-btn-vendor { background: var(--accent); color: #fff; }
+    .login-btn-vendor:hover:not(:disabled) {
+      background: #1D3FAD;
+      box-shadow: 0 4px 14px rgba(30,64,175,0.22);
+      transform: translateY(-1px);
+    }
+    .login-btn-admin { background: var(--fin); color: #fff; }
+    .login-btn-admin:hover:not(:disabled) {
+      background: #6D28D9;
+      box-shadow: 0 4px 14px rgba(124,58,237,0.22);
+      transform: translateY(-1px);
+    }
+    .login-desc { font-size: 12.5px; color: var(--muted); line-height: 1.65; margin-bottom: 1.125rem; }
+    .login-footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .login-footer-logo { height: 30px; width: auto; }
+    .login-footer-text { font-size: 11px; color: var(--muted); }
+
+    /* ── SIDEBAR ─────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--s1);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      height: 54px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sidebar-logo-img { height: 26px; width: auto; object-fit: contain; }
+    .sidebar-k {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .sidebar-k span { color: #fff; font-size: 14px; font-weight: 700; }
+    .sidebar-brand-name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .sidebar-brand-sub  { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .sidebar-nav {
+      flex: 1;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      overflow-y: auto;
+    }
+    .sidebar-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--muted);
+      text-transform: uppercase;
+      padding: 10px 10px 4px;
+      opacity: 0.55;
+    }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      padding: 7px 10px;
+      border-radius: 7px;
+      border: none;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 400;
+      font-family: 'Inter', sans-serif;
+      text-align: left;
+      transition: all .15s;
+    }
+    .sidebar-item:hover { background: var(--s2); color: var(--text); }
+    .sidebar-item.active {
+      background: var(--accent-lt);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .sidebar-item .item-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .sidebar-sep { height: 1px; background: var(--border); margin: 6px 8px; }
+    .sidebar-bottom {
+      padding: 8px 8px 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 7px;
+      background: var(--s2);
+      margin-bottom: 3px;
+    }
+    .sidebar-user-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--above); flex-shrink: 0; }
+    .sidebar-user-name {
+      font-size: 12px;
+      font-weight: 600;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text);
+    }
+    .sidebar-action {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 7px 10px;
+      border-radius: 7px;
+      border: none;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      text-align: left;
+      transition: all .15s;
+    }
+    .sidebar-action:hover { background: var(--s2); color: var(--text); }
+    .sidebar-action.admin { color: var(--accent); }
+    .sidebar-action.admin:hover { background: var(--accent-lt); }
+    .sidebar-action.logout:hover { background: rgba(239,68,68,0.06); color: var(--below); }
+
+    /* ── MAIN ────────────────────────────────────── */
+    .main-wrap { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar {
+      height: 46px;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 8px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .topbar-crumb { display: flex; align-items: center; gap: 6px; }
+    .topbar-crumb span { font-size: 12px; color: var(--muted); }
+    .topbar-crumb strong { font-size: 12px; font-weight: 600; color: var(--text); }
+    .topbar-dot { color: var(--border-mid); font-size: 16px; }
+    .demo-pill {
+      font-size: 10px;
+      color: var(--near);
+      letter-spacing: 1.5px;
+      background: rgba(217,119,6,0.08);
+      border: 1px solid rgba(217,119,6,0.2);
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-weight: 600;
+    }
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: var(--s2);
+      border: 1px solid var(--border);
+    }
+    .user-chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--above); flex-shrink: 0; }
+    .user-chip-name { font-size: 12px; font-weight: 600; color: var(--text); }
+
+    /* ── PAGE ────────────────────────────────────── */
+    .page { padding: 24px 24px 64px; }
+    .sec-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .sec-label::before, .sec-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-transform: uppercase;
+    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .section-gap { margin-top: 36px; }
+
+    /* ── PODIUM ──────────────────────────────────── */
+    .podium { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 16px; }
+    .p-card {
+      flex: 1;
+      border-radius: var(--r-lg);
+      padding: 20px 14px 16px;
+      text-align: center;
+      position: relative;
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-top: 3px solid transparent;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity .4s ease, transform .4s ease, box-shadow .2s;
+      overflow: hidden;
+    }
+    .p-card.in { opacity: 1; transform: translateY(0); }
+    .p-card:hover { box-shadow: 0 8px 28px rgba(15,23,42,0.1); transform: translateY(-4px) !important; }
+    .p-card.rank1 { order: 2; padding-top: 26px; box-shadow: 0 2px 12px rgba(15,23,42,0.07); }
+    .p-card.rank2 { order: 1; }
+    .p-card.rank3 { order: 3; }
+    .crown { font-size: 18px; display: block; margin-bottom: 5px; }
+    .p-badge {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      margin: 0 auto 10px;
+      color: #fff;
+    }
+    .p-avatar {
+      width: 50px; height: 50px;
+      border-radius: 50%;
+      background: var(--s3);
+      border: 2px solid;
+      margin: 0 auto 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .rank1 .p-avatar { width: 60px; height: 60px; font-size: 18px; }
+    .p-name { font-size: 13px; font-weight: 700; margin-bottom: 3px; color: var(--text); }
+    .rank1 .p-name { font-size: 14px; }
+    .p-loja-tag {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      padding: 2px 9px;
+      border-radius: 20px;
+      border: 1px solid;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+    .p-pct { font-size: 30px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+    .rank1 .p-pct { font-size: 38px; }
+    .p-pct-sub { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; margin-bottom: 4px; text-transform: uppercase; }
+    .p-nums { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+    .p-nps {
+      font-size: 10px; font-weight: 600;
+      padding: 2px 7px; border-radius: 4px;
+      display: inline-block; margin-bottom: 8px;
+    }
+    .p-bar { height: 2px; border-radius: 1px; background: var(--s3); overflow: hidden; margin-top: 6px; }
+    .p-bar-fill { height: 100%; border-radius: 1px; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
+
+    /* ── RANKING ROWS ────────────────────────────── */
+    .rest-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+    .v-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--s1);
+      border-radius: var(--r);
+      border: 1px solid var(--border);
+      border-left: 3px solid transparent;
+      opacity: 0;
+      animation: slideIn .35s ease forwards;
+      transition: background .15s, transform .15s;
+    }
+    .v-row:hover { background: var(--s2); transform: translateX(3px); }
+    @keyframes slideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:none} }
+    .v-rank { font-size: 17px; font-weight: 700; color: var(--s3); min-width: 26px; text-align: center; }
+    .v-av {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--s2);
+      border: 1.5px solid;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .v-info { flex: 1; min-width: 0; }
+    .v-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+    .v-store { font-size: 10px; letter-spacing: 0.8px; opacity: .7; margin-top: 1px; }
+    .v-detail { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .v-bar-wrap { flex: 1; max-width: 150px; }
+    .v-bar { height: 3px; background: var(--s3); border-radius: 2px; overflow: hidden; }
+    .v-bar-fill { height: 100%; border-radius: 2px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+    .v-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 58px; }
+    .v-pct { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+    .v-nps-tag { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; }
+    .col-above { color: var(--above); }
+    .col-near  { color: var(--near); }
+    .col-below { color: var(--below); }
+    .fin-badge {
+      font-size: 9px; font-weight: 700; letter-spacing: 1px;
+      color: var(--fin);
+      background: rgba(124,58,237,0.08);
+      border: 1px solid rgba(124,58,237,0.2);
+      border-radius: 4px;
+      padding: 1px 5px;
+      display: inline-block;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+
+    /* ── CHALLENGES ──────────────────────────────── */
+    .ch-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      margin-bottom: 18px;
+    }
+    .ch-user { font-size: 13px; font-weight: 600; color: var(--text); }
+    .ch-pts { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+    .ch-pts span { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+    .ch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media(max-width:768px) { .ch-grid { grid-template-columns: 1fr; } }
+    .ch-lb { grid-column: 1/-1; }
+    .card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 1.125rem;
+      transition: border-color .2s;
+    }
+    .card:hover { border-color: var(--border-mid); }
+    .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 1.125rem; }
+    .card-icon { font-size: 20px; }
+    .card-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .card-sub   { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .quiz-q { font-size: 13px; line-height: 1.65; margin-bottom: 1rem; color: var(--text); }
+    .quiz-opts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .quiz-opt {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      text-align: left;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 12.5px;
+      color: var(--text);
+      transition: all .15s;
+      width: 100%;
+    }
+    .quiz-opt:hover:not([disabled]) { border-color: var(--border-mid); background: var(--s3); }
+    .quiz-opt[disabled] { cursor: default; }
+    .opt-l {
+      width: 20px; height: 20px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      background: rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .opt-correct { border-color: var(--above) !important; background: rgba(22,163,74,0.06) !important; }
+    .opt-correct .opt-l { background: var(--above); color: #fff; }
+    .opt-wrong { border-color: var(--below) !important; background: rgba(239,68,68,0.06) !important; }
+    .opt-wrong .opt-l { background: var(--below); color: #fff; }
+    .opt-dim { opacity: .35; }
+    .quiz-result {
+      padding: 10px 12px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .res-ok  { background: rgba(22,163,74,0.07); color: var(--above); border: 1px solid rgba(22,163,74,0.2); }
+    .res-err { background: rgba(239,68,68,0.07); color: var(--below); border: 1px solid rgba(239,68,68,0.2); }
+    .quiz-nav { display: flex; justify-content: space-between; gap: 8px; }
+    .quiz-nav-btn {
+      padding: 6px 14px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      transition: all .15s;
+    }
+    .quiz-nav-btn:hover:not([disabled]) { color: var(--text); border-color: var(--border-mid); background: var(--s2); }
+    .quiz-nav-btn[disabled] { opacity: .3; cursor: not-allowed; }
+    .ci-desc { font-size: 12.5px; color: var(--muted); margin-bottom: 1rem; line-height: 1.65; }
+    .ci-form { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1rem; }
+    .ci-input {
+      padding: 10px 12px;
+      background: var(--s2);
+      border: 1px solid var(--border-mid);
+      border-radius: 7px;
+      font-size: 13px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .ci-input:focus { border-color: var(--above); box-shadow: 0 0 0 3px rgba(22,163,74,0.08); }
+    .ci-btn {
+      padding: 10px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 12.5px;
+      font-weight: 600;
+      border: 1px solid rgba(22,163,74,0.25);
+      background: rgba(22,163,74,0.07);
+      color: var(--above);
+      transition: all .15s;
+    }
+    .ci-btn:hover { background: rgba(22,163,74,0.13); }
+    .ci-history { display: flex; flex-direction: column; gap: 4px; }
+    .ci-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 6px 10px;
+      background: var(--s2);
+      border-radius: 6px;
+      font-size: 11px;
+    }
+    .ci-item-name { font-weight: 600; }
+    .ci-item-cl, .ci-item-dt { color: var(--muted); }
+    .ci-item-dt { margin-left: auto; }
+    .lb-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 1.5rem; }
+    .lb-list { display: flex; flex-direction: column; gap: 4px; }
+    .lb-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      background: var(--s2);
+      border-radius: 8px;
+      opacity: 0;
+      animation: slideIn .35s ease forwards;
+      transition: background .15s;
+    }
+    .lb-row:hover { background: var(--s3); }
+    .lb-rank { font-size: 16px; font-weight: 700; color: var(--muted); min-width: 22px; }
+    .lb-av {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: var(--s3);
+      border: 1.5px solid;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px; font-weight: 700;
+    }
+    .lb-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--text); }
+    .lb-store { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .lb-score { font-size: 20px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+    .lb-score span { font-size: 10px; color: var(--muted); margin-left: 2px; font-weight: 400; }
+
+    /* ── ADMIN MODAL ─────────────────────────────── */
+    .overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(15,23,42,0.55);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .admin-modal {
+      background: var(--s1);
+      border: 1px solid var(--border-mid);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 580px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(15,23,42,0.18);
+    }
+    .modal-hd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--s1);
+      z-index: 2;
+    }
+    .modal-ttl { font-size: 14px; font-weight: 700; color: var(--text); }
+    .modal-x {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      transition: all .15s;
+    }
+    .modal-x:hover { background: var(--s2); color: var(--text); }
+    .modal-body { padding: 1.25rem 1.5rem; }
+    .modal-hint { font-size: 11.5px; color: var(--muted); margin-bottom: 1.125rem; }
+    .admin-store-section { margin-bottom: 20px; }
+    .admin-store-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 10px;
+    }
+    .admin-vcard {
+      background: var(--s2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+    }
+    .admin-vcard-name {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text);
+    }
+    .admin-vcard-pct { font-size: 15px; font-weight: 700; }
+    .admin-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .admin-field { display: flex; flex-direction: column; gap: 3px; }
+    .admin-field-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; font-weight: 600; text-transform: uppercase; }
+    .admin-input {
+      width: 68px;
+      padding: 6px 8px;
+      text-align: right;
+      background: var(--s1);
+      border: 1px solid var(--border-mid);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .admin-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(30,64,175,0.08); }
+    .admin-divider-v { width: 1px; height: 30px; background: var(--border); align-self: center; }
+    .modal-save {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all .2s;
+      margin-top: 8px;
+    }
+    .modal-save:hover:not(:disabled) { background: #1D3FAD; box-shadow: 0 4px 14px rgba(30,64,175,0.2); }
+    .modal-save.saved { background: var(--above); }
+    .modal-save:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── LOADING ─────────────────────────────────── */
+    .full-loading {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .spin {
+      width: 26px; height: 26px;
+      border: 2px solid var(--border-mid);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spinA .7s linear infinite;
+    }
+    @keyframes spinA { to { transform: rotate(360deg); } }
+
+    @media(max-width:900px) {
+      .sidebar { transform: translateX(-100%); }
+      .main-wrap { margin-left: 0; }
+      .v-bar-wrap { display: none; }
+    }
+    @media(max-width:640px) {
+      .podium { gap: 6px; }
+      .p-card { padding: 14px 8px 12px; }
+      .rank1 .p-pct { font-size: 28px; }
+      .page { padding: 16px 12px 60px; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CONFIGURAÇÃO — substitua pelos valores do seu projeto Supabase
+//  Supabase → Project Settings → API
+// ═══════════════════════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'COLOQUE_SUA_URL_AQUI';
+const SUPABASE_KEY = 'COLOQUE_SUA_ANON_KEY_AQUI';
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ATENÇÃO DE SEGURANÇA:
+// As senhas abaixo são para uso em DEMO/teste local.
+// Em produção, use autenticação via Supabase Auth (email + senha por usuário).
+// Nunca exponha senhas reais em código-fonte público.
+const VENDOR_PWD = 'texpar123';
+const ADMIN_PWD  = 'texpar2025';
+
+const _params   = new URLSearchParams(location.search);
+const TENANT_ID = _params.get('empresa') || null;
+const IS_DEMO   = _params.has('demo') || !TENANT_ID;
+
+const { createClient } = supabase;
+const DUMMY_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0NTk5MjMyMiwiZXhwIjoxOTYxNTY4MzIyfQ.dummy';
+
+let sb = null;
+try {
+  sb = createClient(
+    IS_DEMO ? 'https://placeholder.supabase.co' : SUPABASE_URL,
+    IS_DEMO ? DUMMY_JWT : SUPABASE_KEY
+  );
+} catch(e) {
+  console.warn('[Karis Meta] Supabase createClient falhou — modo offline.', e.message);
+}
+</script>
+<script type="text/javascript">
+const html = htm.bind(React.createElement);
+const { useState, useEffect, useCallback, useMemo } = React;
+
+/* ─── Constantes ──────────────────────────────── */
+const LOJA_ALL = { id: 'all', label: 'Todas', color: '#94A3B8', short: 'TODAS' };
+
+const LOJAS_DEMO = [
+  LOJA_ALL,
+  { id: 'centro',    label: 'SC Centro',     color: '#D97706', short: 'SC-C'   },
+  { id: 'saida',     label: 'SC Saída',      color: '#059669', short: 'SC-S'   },
+  { id: 'rua-preta', label: 'CRU Rua Preta', color: '#2563EB', short: 'CRU-RP' },
+  { id: 'gregorio',  label: 'CRU Gregório',  color: '#DC2626', short: 'CRU-G'  },
+];
+
+const DEMO_VENDORS = [
+  { id:1,  name:'Rilton',   loja:'centro',    tipo:'vend', sales:87,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0 },
+  { id:2,  name:'Helton',   loja:'centro',    tipo:'vend', sales:72,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0 },
+  { id:3,  name:'Eduardo',  loja:'centro',    tipo:'vend', sales:65,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0 },
+  { id:4,  name:'Gilmar',   loja:'saida',     tipo:'vend', sales:103, goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0 },
+  { id:5,  name:'Denilson', loja:'saida',     tipo:'vend', sales:89,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0 },
+  { id:6,  name:'Victor',   loja:'saida',     tipo:'vend', sales:81,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0 },
+  { id:7,  name:'Lucas',    loja:'saida',     tipo:'vend', sales:58,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0 },
+  { id:8,  name:'Higor',    loja:'rua-preta', tipo:'vend', sales:94,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0 },
+  { id:9,  name:'Wesley',   loja:'gregorio',  tipo:'vend', sales:102, goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0 },
+  { id:10, name:'Thiago',   loja:'gregorio',  tipo:'vend', sales:79,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0 },
+  { id:11, name:'Jean',     loja:'gregorio',  tipo:'vend', sales:55,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0 },
+];
+
+const QUIZZES = [
+  { id:1, week:'Semana 1', question:'Qual é a composição da malha Dry 3D?', options:['100% Algodão penteado','Poliéster com bandeira brasileira tecida na estrutura','Viscose com 5% elastano','Poliamida com lycra'], correct:1, tip:'Poliéster com bandeira brasileira tecida na estrutura do fio.' },
+  { id:2, week:'Semana 2', question:'Quantas cores tem o catálogo de Ribana Canelada atual?', options:['12 cores','18 cores','24 cores','32 cores'], correct:2, tip:'O catálogo atual conta com 24 opções de cores.' },
+  { id:3, week:'Semana 3', question:'Qual o principal diferencial do Cotton Texpar?', options:['Menor preço do mercado','Entrega expressa 24h','Fio 100% penteado com gramatura superior','Disponível apenas online'], correct:2, tip:'Fio 100% penteado com gramatura superior — durabilidade e toque únicos.' },
+];
+
+/* Cores dos ranks no pódio */
+const RANK_META = {
+  1: { border: '#D97706', badge: '#D97706', bg: 'rgba(217,119,6,0.04)' },
+  2: { border: '#94A3B8', badge: '#94A3B8', bg: 'rgba(148,163,184,0.04)' },
+  3: { border: '#B45309', badge: '#B45309', bg: 'rgba(180,83,9,0.04)' },
+};
+
+/* ─── Helpers ─────────────────────────────────── */
+const getLoja   = (lojas, id) => lojas.find(l => l.id === id) || { color: '#94A3B8', label: id, short: id };
+const inits     = n  => n.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+const getPct    = v  => v.tipo === 'fin'
+  ? (v.inatives_goal > 0 ? Math.round((v.inatives / v.inatives_goal) * 100) : 0)
+  : (v.goal > 0 ? Math.round((v.sales / v.goal) * 100) : 0);
+const getNpsPct = v  => v.nps_goal > 0 ? Math.round((v.nps / v.nps_goal) * 100) : null;
+const pctCls    = p  => p >= 100 ? 'col-above' : p >= 75 ? 'col-near' : 'col-below';
+const npsCls    = p  => p >= 100 ? 'col-above' : p >= 80 ? 'col-near' : 'col-below';
+const lsGet     = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
+const lsSet     = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+function normalizeVendors(fromDB) {
+  return (fromDB || []).map(v => ({
+    id:            v.id,
+    tenant_id:     v.tenant_id,
+    name:          v.name,
+    loja:          v.loja,
+    tipo:          v.tipo          || 'vend',
+    sales:         v.sales         ?? 0,
+    goal:          v.goal          ?? 0,
+    inatives:      v.inatives      ?? 0,
+    inatives_goal: v.inatives_goal ?? 0,
+    nps:           v.nps           ?? 0,
+    nps_goal:      v.nps_goal      ?? 0,
+  }));
+}
+
+/* ─── App ─────────────────────────────────────── */
+function App() {
+  const [page,      setPage]      = useState('ranking');
+  const [filter,    setFilter]    = useState('all');
+  const [vendors,   setVendors]   = useState(IS_DEMO ? DEMO_VENDORS : []);
+  const [loading,   setLoading]   = useState(!IS_DEMO);
+  const [tenant,    setTenant]    = useState(null);
+  const [lojas,     setLojas]     = useState(LOJAS_DEMO);
+  const [quizAns,   setQuizAns]   = useState(() => lsGet('tx-q',  {}));
+  const [checkins,  setCheckins]  = useState(() => lsGet('tx-ci', []));
+  const [session,   setSession]   = useState(() => lsGet('tx-session', { role: null, name: null }));
+  const [showAdmin, setShowAdmin] = useState(false);
+
+  useEffect(() => lsSet('tx-q',       quizAns),  [quizAns]);
+  useEffect(() => lsSet('tx-ci',      checkins), [checkins]);
+  useEffect(() => lsSet('tx-session', session),  [session]);
+
+  /* Carrega tenant + vendedores do Supabase */
+  useEffect(() => {
+    if (IS_DEMO || !sb || !TENANT_ID) { setLoading(false); return; }
+    let channel;
+    (async () => {
+      try {
+        const { data: t } = await sb.from('tenants').select('*').eq('id', TENANT_ID).single();
+        if (t) {
+          setTenant(t);
+          if (t.lojas?.length > 0) setLojas([LOJA_ALL, ...t.lojas]);
+        }
+        const { data, error } = await sb.from('vendors').select('*').eq('tenant_id', TENANT_ID);
+        if (!error && data) setVendors(normalizeVendors(data));
+        setLoading(false);
+
+        if (!error) {
+          channel = sb.channel('rt-' + TENANT_ID)
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vendors' }, async () => {
+              const { data: d } = await sb.from('vendors').select('*').eq('tenant_id', TENANT_ID);
+              if (d) setVendors(normalizeVendors(d));
+            })
+            .subscribe();
+        }
+      } catch(e) {
+        console.error('[Karis Meta] Supabase error:', e);
+        setLoading(false);
+      }
+    })();
+    return () => { if (channel) sb.removeChannel(channel); };
+  }, []);
+
+  const logout = useCallback(() => {
+    const s = { role: null, name: null };
+    setSession(s);
+    lsSet('tx-session', s);
+    setShowAdmin(false);
+    setPage('ranking');
+  }, []);
+
+  if (loading) return html`
+    <div className="full-loading">
+      <div className="spin"></div>
+      Carregando...
+    </div>`;
+
+  if (!session.role) return html`
+    <${LoginPage}
+      vendors=${vendors}
+      onSession=${setSession}
+      tenant=${tenant}
+      lojas=${lojas}
+    />`;
+
+  const currentLoja = lojas.find(l => l.id === filter) || lojas[0];
+
+  return html`
+    <div style=${{ display: 'flex' }}>
+      <${Sidebar}
+        page=${page}      setPage=${setPage}
+        filter=${filter}  setFilter=${setFilter}
+        session=${session} lojas=${lojas}
+        onAdmin=${() => setShowAdmin(true)}
+        onLogout=${logout}
+      />
+      <div className="main-wrap">
+        <header className="topbar">
+          <div className="topbar-crumb">
+            <span>Karis Meta</span>
+            <span className="topbar-dot">·</span>
+            <strong>${page === 'ranking' ? 'Ranking' : 'Desafios'}</strong>
+            ${filter !== 'all' && html`
+              <span className="topbar-dot">·</span>
+              <strong style=${{ color: currentLoja.color }}>${currentLoja.label}</strong>
+            `}
+          </div>
+          <div style=${{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            ${IS_DEMO && html`<span className="demo-pill">DEMO</span>`}
+            <div className="user-chip">
+              <div className="user-chip-dot"></div>
+              <span className="user-chip-name">
+                ${session.role === 'admin' ? '⚙ Admin' : session.name}
+              </span>
+            </div>
+          </div>
+        </header>
+        <div className="page">
+          ${page === 'ranking'
+            ? html`<${RankingPage} vendors=${vendors} filter=${filter} lojas=${lojas} />`
+            : html`<${ChallengesPage}
+                vendors=${vendors}
+                quizAns=${quizAns}   setQuizAns=${setQuizAns}
+                checkins=${checkins} setCheckins=${setCheckins}
+                session=${session}   lojas=${lojas}
+              />`
+          }
+        </div>
+      </div>
+      ${showAdmin && session.role === 'admin' && html`
+        <${AdminModal}
+          vendors=${vendors}
+          setVendors=${setVendors}
+          lojas=${lojas}
+          onClose=${() => setShowAdmin(false)}
+        />
+      `}
+    </div>`;
+}
+
+/* ─── Sidebar ─────────────────────────────────── */
+function Sidebar({ page, setPage, filter, setFilter, session, lojas, onAdmin, onLogout }) {
+  return html`
+    <aside className="sidebar">
+      <div className="sidebar-logo">
+        <img
+          className="sidebar-logo-img"
+          src="./logo-karis-labs.png"
+          alt="Karis Labs"
+          onError=${e => {
+            e.target.style.display = 'none';
+            document.getElementById('sb-fb')?.style.setProperty('display', 'flex');
+          }}
+        />
+        <div id="sb-fb" style=${{ display: 'none', alignItems: 'center', gap: 8, flex: 1 }}>
+          <div className="sidebar-k"><span>K</span></div>
+          <div>
+            <div className="sidebar-brand-name">Karis Meta</div>
+            <div className="sidebar-brand-sub">by Karis Labs</div>
+          </div>
+        </div>
+      </div>
+
+      <nav className="sidebar-nav">
+        <div className="sidebar-section-label">Navegação</div>
+        <button
+          className=${'sidebar-item' + (page === 'ranking' ? ' active' : '')}
+          onClick=${() => setPage('ranking')}>
+          🏆 Ranking
+        </button>
+        <button
+          className=${'sidebar-item' + (page === 'challenges' ? ' active' : '')}
+          onClick=${() => setPage('challenges')}>
+          ⚡ Desafios
+        </button>
+
+        <div className="sidebar-sep"></div>
+        <div className="sidebar-section-label">Lojas</div>
+        ${lojas.map(l => html`
+          <button
+            key=${l.id}
+            className=${'sidebar-item' + (filter === l.id ? ' active' : '')}
+            style=${filter === l.id
+              ? { color: l.color, background: l.color + '12' }
+              : {}}
+            onClick=${() => setFilter(l.id)}>
+            <span className="item-dot" style=${{ background: l.color }}></span>
+            ${l.label}
+          </button>`)}
+      </nav>
+
+      <div className="sidebar-bottom">
+        <div className="sidebar-user">
+          <div className="sidebar-user-dot"></div>
+          <span className="sidebar-user-name">
+            ${session.role === 'admin' ? '⚙ Admin' : session.name}
+          </span>
+        </div>
+        ${session.role === 'admin' && html`
+          <button className="sidebar-action admin" onClick=${onAdmin}>
+            ⚙ Painel Admin
+          </button>`}
+        <button className="sidebar-action logout" onClick=${onLogout}>
+          ↩ Sair
+        </button>
+      </div>
+    </aside>`;
+}
+
+/* ─── LoginPage ───────────────────────────────── */
+function LoginPage({ vendors, onSession, tenant, lojas }) {
+  const [tab,       setTab]       = useState('vendor');
+  const [selVendor, setSelVendor] = useState('');
+  const [pwd,       setPwd]       = useState('');
+  const [adminPwd,  setAdminPwd]  = useState('');
+  const [err,       setErr]       = useState('');
+
+  const switchTab = t => { setTab(t); setErr(''); setPwd(''); setAdminPwd(''); };
+
+  function enterVendor() {
+    if (!selVendor)          { setErr('Selecione seu nome na lista.'); return; }
+    if (!pwd)                { setErr('Digite sua senha de acesso.'); return; }
+    if (pwd !== VENDOR_PWD)  { setErr('Senha incorreta. Verifique com seu gerente.'); return; }
+    onSession({ role: 'vendor', name: selVendor });
+  }
+
+  function enterAdmin() {
+    if (!adminPwd)            { setErr('Digite a senha de administrador.'); return; }
+    if (adminPwd === ADMIN_PWD) { onSession({ role: 'admin', name: 'Admin' }); }
+    else setErr('Senha incorreta. Tente novamente.');
+  }
+
+  const tenantName = tenant?.name || (IS_DEMO ? 'Texpar Malhas' : null);
+
+  return html`
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-header">
+          ${(tenant?.logo_url)
+            ? html`<img className="login-tenant-logo" src=${tenant.logo_url} alt=${tenant.name} />`
+            : IS_DEMO
+              ? html`<img className="login-tenant-logo" src="./logo-texpar.png" alt="Texpar Malhas"
+                  onError=${e => { e.target.style.display = 'none'; }} />`
+              : html`<span className="login-tenant-name">${tenantName || '◆'}</span>`
+          }
+          <span className="login-subtitle">Plataforma de Performance de Vendas</span>
+        </div>
+
+        <div className="login-divider"></div>
+
+        <div className="login-tabs">
+          <button
+            className=${'login-tab' + (tab === 'vendor' ? ' active' : '')}
+            onClick=${() => switchTab('vendor')}>
+            👤 Vendedor
+          </button>
+          <button
+            className=${'login-tab' + (tab === 'admin' ? ' active' : '')}
+            onClick=${() => switchTab('admin')}>
+            ⚙ Administrador
+          </button>
+        </div>
+
+        ${tab === 'vendor' ? html`
+          <div>
+            <p className="login-desc">Selecione seu nome e insira a senha para acessar o ranking e os desafios.</p>
+            <div className="login-field">
+              <label className="login-label">Seu Nome</label>
+              <select className="login-select" value=${selVendor} onChange=${e => setSelVendor(e.target.value)}>
+                <option value="">Selecione seu nome...</option>
+                ${vendors.map(v => html`
+                  <option key=${v.id} value=${v.name}>
+                    ${v.name}${v.tipo === 'fin' ? ' (Financeiro)' : ''} — ${getLoja(lojas || LOJAS_DEMO, v.loja).label}
+                  </option>`)}
+              </select>
+            </div>
+            <div className="login-field">
+              <label className="login-label">Senha de Acesso</label>
+              <input
+                className="login-input"
+                type="password"
+                placeholder="••••••••"
+                value=${pwd}
+                onInput=${e => setPwd(e.target.value)}
+                onKeyDown=${e => e.key === 'Enter' && enterVendor()}
+              />
+            </div>
+            ${err && html`<div className="login-err">${err}</div>`}
+            <button className="login-btn login-btn-vendor" onClick=${enterVendor}>Entrar</button>
+          </div>
+        ` : html`
+          <div>
+            <p className="login-desc">Acesso exclusivo para gerentes. Insira a senha de administrador.</p>
+            <div className="login-field">
+              <label className="login-label">Senha de Administrador</label>
+              <input
+                className="login-input"
+                type="password"
+                placeholder="••••••••"
+                value=${adminPwd}
+                onInput=${e => setAdminPwd(e.target.value)}
+                onKeyDown=${e => e.key === 'Enter' && enterAdmin()}
+              />
+            </div>
+            ${err && html`<div className="login-err">${err}</div>`}
+            <button className="login-btn login-btn-admin" onClick=${enterAdmin}>Entrar como Admin</button>
+          </div>
+        `}
+
+        <div className="login-footer">
+          <img
+            className="login-footer-logo"
+            src="./logo-karis-meta.png"
+            alt="Karis Meta"
+            onError=${e => { e.target.style.display = 'none'; }}
+          />
+          <span className="login-footer-text">© ${new Date().getFullYear()} Karis Labs</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ─── RankingPage ─────────────────────────────── */
+function RankingPage({ vendors, filter, lojas }) {
+  const filtered = useMemo(() =>
+    vendors
+      .filter(v => filter === 'all' || v.loja === filter)
+      .map(v => ({ ...v, pct: getPct(v) })),
+    [vendors, filter]
+  );
+
+  const vendas = useMemo(() => filtered.filter(v => v.tipo === 'vend').sort((a,b) => b.pct - a.pct), [filtered]);
+  const fin    = useMemo(() => filtered.filter(v => v.tipo === 'fin').sort((a,b) => b.pct - a.pct), [filtered]);
+  const mes    = new Date().toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
+
+  return html`
+    <div>
+      <div className="sec-label">${mes}</div>
+
+      ${vendas.length > 0 && html`
+        <div className="section-title">🏆 Equipe de Vendas</div>
+        ${vendas.length >= 3 && html`
+          <div className="podium">
+            <${PodCard} v=${vendas[1]} rank=${2} delay=${120} lojas=${lojas} />
+            <${PodCard} v=${vendas[0]} rank=${1} delay=${0}   lojas=${lojas} />
+            <${PodCard} v=${vendas[2]} rank=${3} delay=${240} lojas=${lojas} />
+          </div>`}
+        ${vendas.length < 3 && html`
+          <div className="rest-list" style=${{ marginBottom: 20 }}>
+            ${vendas.map((v,i) => html`<${VRow} key=${v.id} v=${v} rank=${i+1} delay=${i*70} lojas=${lojas} />`)}
+          </div>`}
+        ${vendas.length >= 3 && vendas.slice(3).length > 0 && html`
+          <div className="rest-list">
+            ${vendas.slice(3).map((v,i) => html`<${VRow} key=${v.id} v=${v} rank=${i+4} delay=${i*70} lojas=${lojas} />`)}
+          </div>`}
+      `}
+
+      ${fin.length > 0 && html`
+        <div className=${'section-title' + (vendas.length > 0 ? ' section-gap' : '')}>
+          💼 Equipe Financeiro
+        </div>
+        <div style=${{ marginBottom: 10, fontSize: 11, color: 'var(--muted)', letterSpacing: '0.5px' }}>
+          Ranking por clientes inativos recuperados
+        </div>
+        <div className="rest-list">
+          ${fin.map((v,i) => html`<${VRow} key=${v.id} v=${v} rank=${i+1} delay=${i*70} isFin=${true} lojas=${lojas} />`)}
+        </div>
+      `}
+
+      ${filtered.length === 0 && html`
+        <div style=${{ textAlign: 'center', color: 'var(--muted)', padding: '3rem', fontSize: 13 }}>
+          Nenhum colaborador nesta loja.
+        </div>`}
+    </div>`;
+}
+
+/* ─── PodCard ─────────────────────────────────── */
+function PodCard({ v, rank, delay, lojas }) {
+  const [vis, setVis] = useState(false);
+  const [bar, setBar] = useState(0);
+  const li  = getLoja(lojas || LOJAS_DEMO, v.loja);
+  const nps = getNpsPct(v);
+  const rm  = RANK_META[rank];
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setVis(true),         delay + 80);
+    const t2 = setTimeout(() => setBar(Math.min(v.pct, 100)), delay + 320);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [delay, v.pct]);
+
+  return html`
+    <div
+      className=${'p-card rank' + rank + (vis ? ' in' : '')}
+      style=${{
+        borderTopColor: rm.border,
+        backgroundColor: rm.bg,
+      }}>
+      ${rank === 1 && html`<span className="crown">👑</span>`}
+      <div className="p-badge" style=${{ background: rm.badge }}>${rank}°</div>
+      <div className="p-avatar" style=${{ borderColor: li.color, color: li.color }}>${inits(v.name)}</div>
+      <div className="p-name">${v.name}</div>
+      <div className="p-loja-tag" style=${{ color: li.color, borderColor: li.color + '44' }}>${li.short}</div>
+      <div className=${'p-pct ' + pctCls(v.pct)}>${v.pct}%</div>
+      <div className="p-pct-sub">${v.tipo === 'fin' ? 'Inativos' : 'da Meta'}</div>
+      <div className="p-nums">
+        ${v.tipo === 'fin'
+          ? v.inatives + ' / ' + v.inatives_goal + ' clientes'
+          : v.sales + ' / ' + v.goal + ' un.'}
+      </div>
+      ${nps !== null && html`
+        <div
+          className=${'p-nps ' + npsCls(nps)}
+          style=${{ background: 'rgba(124,58,237,0.08)', color: 'var(--fin)' }}>
+          NPS ${v.nps}/${v.nps_goal}
+        </div>`}
+      <div className="p-bar">
+        <div className="p-bar-fill" style=${{ width: bar + '%', background: li.color }} />
+      </div>
+    </div>`;
+}
+
+/* ─── VRow ────────────────────────────────────── */
+function VRow({ v, rank, delay, isFin, lojas }) {
+  const [bar, setBar] = useState(0);
+  const li  = getLoja(lojas || LOJAS_DEMO, v.loja);
+  const nps = getNpsPct(v);
+
+  useEffect(() => {
+    const t = setTimeout(() => setBar(Math.min(v.pct, 100)), delay + 120);
+    return () => clearTimeout(t);
+  }, [delay, v.pct]);
+
+  const detail = isFin
+    ? (v.inatives_goal > 0 ? v.inatives + ' / ' + v.inatives_goal + ' clientes inativos' : '')
+    : (v.goal > 0 ? v.sales + ' / ' + v.goal + ' un.' : '');
+
+  const borderColor = isFin ? 'var(--fin)' : li.color;
+
+  return html`
+    <div className="v-row" style=${{ animationDelay: delay + 'ms', borderLeftColor: borderColor }}>
+      <div className="v-rank">${rank}</div>
+      <div className="v-av" style=${{ borderColor, color: borderColor }}>${inits(v.name)}</div>
+      <div className="v-info">
+        <div className="v-name">
+          ${v.name}
+          ${isFin && html`<span className="fin-badge">FIN</span>`}
+        </div>
+        <div className="v-store" style=${{ color: borderColor }}>${li.label}</div>
+        ${detail && html`<div className="v-detail">${detail}</div>`}
+      </div>
+      <div className="v-bar-wrap">
+        <div className="v-bar">
+          <div className="v-bar-fill" style=${{ width: bar + '%', background: borderColor }} />
+        </div>
+      </div>
+      <div className="v-right">
+        <div className=${'v-pct ' + pctCls(v.pct)}>${v.pct}%</div>
+        ${nps !== null && html`
+          <div
+            className=${'v-nps-tag ' + npsCls(nps)}
+            style=${{ background: 'rgba(124,58,237,0.08)', color: 'var(--fin)' }}>
+            NPS ${v.nps}
+          </div>`}
+      </div>
+    </div>`;
+}
+
+/* ─── ChallengesPage ──────────────────────────── */
+function ChallengesPage({ vendors, quizAns, setQuizAns, checkins, setCheckins, session, lojas }) {
+  const [qIdx,  setQIdx]  = useState(0);
+  const [sel,   setSel]   = useState(null);
+  const [showR, setShowR] = useState(false);
+  const [ciCli, setCiCli] = useState('');
+  const uname = session.name;
+  const quiz  = QUIZZES[qIdx];
+  const prevA = quizAns[quiz?.id];
+
+  const { qScores, ciScores } = useMemo(() => {
+    const qs = {}, cs = {};
+    Object.entries(quizAns).forEach(([id, a]) => {
+      const q = QUIZZES.find(q => q.id === Number(id));
+      if (q && a.correct) qs[a.name] = (qs[a.name] || 0) + 10;
+    });
+    checkins.forEach(c => { cs[c.name] = (cs[c.name] || 0) + 50; });
+    return { qScores: qs, ciScores: cs };
+  }, [quizAns, checkins]);
+
+  const board = useMemo(() => {
+    const allNames = [...new Set([
+      ...vendors.map(v => v.name),
+      ...Object.keys(qScores),
+      ...Object.keys(ciScores),
+    ])];
+    return allNames
+      .map(n => ({
+        name: n,
+        score: (qScores[n] || 0) + (ciScores[n] || 0),
+        vendor: vendors.find(v => v.name === n),
+      }))
+      .filter(x => x.score > 0)
+      .sort((a, b) => b.score - a.score);
+  }, [vendors, qScores, ciScores]);
+
+  function answer(idx) {
+    if (prevA || sel !== null) return;
+    setSel(idx);
+    setShowR(true);
+    setQuizAns(p => ({ ...p, [quiz.id]: { name: uname, answer: idx, correct: idx === quiz.correct } }));
+  }
+
+  function doCI() {
+    if (!ciCli.trim()) return;
+    setCheckins(p => [...p, {
+      id: Date.now(),
+      name: uname,
+      client: ciCli.trim(),
+      date: new Date().toLocaleDateString('pt-BR'),
+    }]);
+    setCiCli('');
+  }
+
+  const myScore  = (qScores[uname] || 0) + (ciScores[uname] || 0);
+  const answered = showR || prevA;
+
+  return html`
+    <div>
+      <div className="ch-bar">
+        <span className="ch-user">⚡ ${uname}</span>
+        <span className="ch-pts">${myScore} <span>pts</span></span>
+      </div>
+
+      <div className="ch-grid">
+        <!-- Quiz -->
+        <div className="card">
+          <div className="card-head">
+            <span className="card-icon">🧠</span>
+            <div>
+              <div className="card-title">Quiz de Produto</div>
+              <div className="card-sub">${quiz.week} · ${qIdx+1}/${QUIZZES.length}</div>
+            </div>
+          </div>
+          <p className="quiz-q">${quiz.question}</p>
+          <div className="quiz-opts">
+            ${quiz.options.map((opt, i) => {
+              let cls = 'quiz-opt';
+              if (answered) {
+                if (i === quiz.correct) cls += ' opt-correct';
+                else if (i === (sel ?? prevA?.answer) && i !== quiz.correct) cls += ' opt-wrong';
+                else cls += ' opt-dim';
+              }
+              return html`
+                <button key=${i} className=${cls} disabled=${!!answered} onClick=${() => answer(i)}>
+                  <span className="opt-l">${String.fromCharCode(65 + i)}</span>
+                  ${opt}
+                </button>`;
+            })}
+          </div>
+          ${answered && html`
+            <div className=${'quiz-result ' + ((sel === quiz.correct || prevA?.correct) ? 'res-ok' : 'res-err')}>
+              ${(sel === quiz.correct || prevA?.correct)
+                ? '🎉 Correto! +10 pontos'
+                : '❌ Errou — ' + quiz.tip}
+            </div>`}
+          <div className="quiz-nav">
+            <button
+              className="quiz-nav-btn"
+              disabled=${qIdx === 0}
+              onClick=${() => { setQIdx(q => q - 1); setSel(null); setShowR(false); }}>
+              ← Anterior
+            </button>
+            <button
+              className="quiz-nav-btn"
+              disabled=${qIdx === QUIZZES.length - 1}
+              onClick=${() => { setQIdx(q => q + 1); setSel(null); setShowR(false); }}>
+              Próximo →
+            </button>
+          </div>
+        </div>
+
+        <!-- Check-in -->
+        <div className="card">
+          <div className="card-head">
+            <span className="card-icon">📞</span>
+            <div>
+              <div className="card-title">Desafio Semanal</div>
+              <div className="card-sub">+50 pontos por check-in</div>
+            </div>
+          </div>
+          <p className="ci-desc">Marque um cliente que não compra há 3 semanas e registre o contato aqui.</p>
+          <div className="ci-form">
+            <input
+              className="ci-input"
+              placeholder="Nome do cliente contatado"
+              value=${ciCli}
+              onInput=${e => setCiCli(e.target.value)}
+              onKeyDown=${e => e.key === 'Enter' && doCI()}
+            />
+            <button className="ci-btn" onClick=${doCI}>✓ Registrar check-in</button>
+          </div>
+          ${checkins.filter(c => c.name === uname).length > 0 && html`
+            <div className="ci-history">
+              ${checkins.filter(c => c.name === uname).slice(-4).reverse().map(c => html`
+                <div key=${c.id} className="ci-item">
+                  <span className="ci-item-name">${c.name}</span>
+                  <span className="ci-item-cl">→ ${c.client}</span>
+                  <span className="ci-item-dt">${c.date}</span>
+                </div>`)}
+            </div>`}
+        </div>
+
+        <!-- Leaderboard -->
+        <div className="card ch-lb">
+          <div className="card-head">
+            <span className="card-icon">⚡</span>
+            <div>
+              <div className="card-title">Ranking de Pontos</div>
+              <div className="card-sub">Quiz (10 pts) + Check-in semanal (50 pts)</div>
+            </div>
+          </div>
+          ${board.length === 0
+            ? html`<div className="lb-empty">Nenhuma pontuação ainda — seja o primeiro! 🏆</div>`
+            : html`
+              <div className="lb-list">
+                ${board.map((e, i) => {
+                  const li = e.vendor ? getLoja(lojas || LOJAS_DEMO, e.vendor.loja) : { color: '#94A3B8', label: '—' };
+                  return html`
+                    <div key=${e.name} className="lb-row" style=${{ animationDelay: i * 55 + 'ms' }}>
+                      <div className="lb-rank">${i + 1}</div>
+                      <div className="lb-av" style=${{ borderColor: li.color, color: li.color }}>${inits(e.name)}</div>
+                      <div style=${{ flex: 1 }}>
+                        <div className="lb-name">${e.name}</div>
+                        <div className="lb-store" style=${{ color: li.color }}>${li.label}</div>
+                      </div>
+                      <div className="lb-score">${e.score}<span>pts</span></div>
+                    </div>`;
+                })}
+              </div>`}
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ─── AdminModal ──────────────────────────────── */
+// BUG FIX: agora recebe `lojas` como prop (antes usava variável `LOJAS` indefinida)
+function AdminModal({ vendors, setVendors, lojas, onClose }) {
+  const [draft,  setDraft]  = useState(() =>
+    vendors.reduce((acc, v) => ({
+      ...acc,
+      [v.id]: {
+        sales: v.sales, goal: v.goal,
+        inatives: v.inatives, inatives_goal: v.inatives_goal,
+        nps: v.nps, nps_goal: v.nps_goal,
+      },
+    }), {})
+  );
+  const [saved,  setSaved]  = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const upd = useCallback((id, field, val) => {
+    setDraft(p => ({ ...p, [id]: { ...p[id], [field]: val } }));
+  }, []);
+
+  function previewPct(id, v) {
+    const d = draft[id];
+    if (v.tipo === 'fin') {
+      const n = Number(d.inatives) || 0, g = Number(d.inatives_goal) || 0;
+      return g > 0 ? Math.round((n / g) * 100) : 0;
+    }
+    const s = Number(d.sales) || 0, g = Number(d.goal) || 0;
+    return g > 0 ? Math.round((s / g) * 100) : 0;
+  }
+
+  async function save() {
+    setSaving(true);
+    const updated = vendors.map(v => {
+      const d = draft[v.id];
+      return {
+        ...v,
+        sales:         Math.max(0, Number(d.sales)         || 0),
+        goal:          Math.max(0, Number(d.goal)          || 0),
+        inatives:      Math.max(0, Number(d.inatives)      || 0),
+        inatives_goal: Math.max(0, Number(d.inatives_goal) || 0),
+        nps:           Math.max(0, Number(d.nps)           || 0),
+        nps_goal:      Math.max(0, Number(d.nps_goal)      || 0),
+      };
+    });
+
+    if (!IS_DEMO && sb && TENANT_ID) {
+      for (const v of updated) {
+        await sb.from('vendors').update({
+          sales: v.sales, goal: v.goal,
+          inatives: v.inatives, inatives_goal: v.inatives_goal,
+          nps: v.nps, nps_goal: v.nps_goal,
+        }).eq('id', v.id).eq('tenant_id', TENANT_ID);
+      }
+      const now = new Date();
+      const at = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      await sb.from('settings').update({ value: at }).eq('key', 'updated_at').eq('tenant_id', TENANT_ID);
+    }
+
+    setVendors(updated);
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
+
+  // Usa lojas passadas como prop (bug fix — antes era LOJAS indefinido)
+  const lojasFiltradas = (lojas || LOJAS_DEMO).filter(l => l.id !== 'all');
+
+  return html`
+    <div className="overlay" onClick=${e => e.target === e.currentTarget && onClose()}>
+      <div className="admin-modal">
+        <div className="modal-hd">
+          <span className="modal-ttl">⚙ Painel Admin</span>
+          <button className="modal-x" onClick=${onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <p className="modal-hint">Insira os resultados e metas de cada colaborador</p>
+          ${lojasFiltradas.map(l => {
+            const grp = vendors.filter(v => v.loja === l.id);
+            if (!grp.length) return null;
+            return html`
+              <div key=${l.id} className="admin-store-section">
+                <div className="admin-store-label" style=${{ color: l.color }}>${l.label}</div>
+                ${grp.map(v => {
+                  const d   = draft[v.id];
+                  const pp  = previewPct(v.id, v);
+                  const fin = v.tipo === 'fin';
+                  return html`
+                    <div key=${v.id} className="admin-vcard">
+                      <div className="admin-vcard-name">
+                        <span>
+                          ${v.name}
+                          ${fin && html`<span className="fin-badge">FIN</span>`}
+                        </span>
+                        <span className=${'admin-vcard-pct ' + pctCls(pp)}>${pp}%</span>
+                      </div>
+                      <div className="admin-row">
+                        ${fin ? html`
+                          <div className="admin-field">
+                            <span className="admin-field-label">Inativos</span>
+                            <input className="admin-input" type="number" min="0"
+                              value=${d.inatives}
+                              onInput=${e => upd(v.id, 'inatives', e.target.value)} />
+                          </div>
+                          <div className="admin-field">
+                            <span className="admin-field-label">Meta</span>
+                            <input className="admin-input" type="number" min="0"
+                              value=${d.inatives_goal}
+                              onInput=${e => upd(v.id, 'inatives_goal', e.target.value)} />
+                          </div>
+                        ` : html`
+                          <div className="admin-field">
+                            <span className="admin-field-label">Vendas</span>
+                            <input className="admin-input" type="number" min="0"
+                              value=${d.sales}
+                              onInput=${e => upd(v.id, 'sales', e.target.value)} />
+                          </div>
+                          <div className="admin-field">
+                            <span className="admin-field-label">Meta</span>
+                            <input className="admin-input" type="number" min="0"
+                              value=${d.goal}
+                              onInput=${e => upd(v.id, 'goal', e.target.value)} />
+                          </div>
+                        `}
+                        <div className="admin-divider-v"></div>
+                        <div className="admin-field">
+                          <span className="admin-field-label">NPS</span>
+                          <input className="admin-input" type="number" min="0" max="100"
+                            value=${d.nps}
+                            onInput=${e => upd(v.id, 'nps', e.target.value)} />
+                        </div>
+                        <div className="admin-field">
+                          <span className="admin-field-label">Meta NPS</span>
+                          <input className="admin-input" type="number" min="0" max="100"
+                            value=${d.nps_goal}
+                            onInput=${e => upd(v.id, 'nps_goal', e.target.value)} />
+                        </div>
+                      </div>
+                    </div>`;
+                })}
+              </div>`;
+          })}
+          <button
+            className=${'modal-save' + (saved ? ' saved' : '')}
+            disabled=${saving}
+            onClick=${save}>
+            ${saving ? 'Salvando...' : saved ? '✓ Salvo com sucesso!' : 'Salvar dados'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(html`<${App} />`);
+</script>
+</body>
+</html>

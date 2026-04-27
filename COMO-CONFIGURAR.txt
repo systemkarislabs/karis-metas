@@ -1,0 +1,174 @@
+═══════════════════════════════════════════════════════════════════
+  TEXPAR MALHAS — Guia de configuração (passo a passo)
+═══════════════════════════════════════════════════════════════════
+
+COMO FUNCIONA O ACESSO
+──────────────────────
+  Sem login        → tela de login, nada é visível
+  Login normal     → vê o ranking completo (somente leitura)
+  Login de admin   → vê o ranking + painel para editar sua loja
+
+Isso significa que você pode criar:
+  • Contas para todos os vendedores/gerentes verem o ranking
+  • Contas especiais de admin (uma por loja) para atualizar os dados
+
+
+O QUE VOCÊ VAI PRECISAR
+────────────────────────
+  - Um navegador (Chrome ou Edge)
+  - Os arquivos desta pasta:
+      index.html            ← o site
+      supabase-setup.sql    ← script do banco de dados
+      COMO-CONFIGURAR.txt   ← este guia
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PASSO 1 — Criar conta gratuita no Supabase
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Acesse: https://supabase.com
+2. Clique em "Start your project" → crie conta (pode usar Google).
+3. Clique em "New project" e preencha:
+     - Name: texpar-malhas
+     - Database Password: anote essa senha em local seguro
+     - Region: South America (São Paulo)
+4. Clique em "Create new project" e aguarde ~1 minuto.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PASSO 2 — Criar as tabelas do banco de dados
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. No Supabase, clique em "SQL Editor" (menu esquerdo).
+2. Clique em "New query".
+3. Abra o arquivo "supabase-setup.sql" com o Bloco de Notas.
+4. Selecione tudo (Ctrl+A), copie (Ctrl+C).
+5. Cole no SQL Editor (Ctrl+V) e clique em "Run" (▶).
+   Deve aparecer: "Success. No rows returned".
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PASSO 3 — Criar as contas dos usuários
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+No Supabase → "Authentication" (menu esquerdo) → "Users" → "Add user"
+→ "Create new user".
+
+Crie um usuário para cada pessoa que vai acessar o sistema.
+
+  VISUALIZADORES (veem o ranking, não editam):
+    Crie normalmente com e-mail e senha.
+    Exemplos:
+      rilton@texpar.com       / senha forte
+      helton@texpar.com       / senha forte
+      (... um para cada vendedor que quiser dar acesso)
+
+  ADMINS POR LOJA (veem + editam os dados da loja deles):
+    Crie normalmente com e-mail e senha.
+    Exemplos:
+      admin.centro@texpar.com    / senha forte
+      admin.saida@texpar.com     / senha forte
+      admin.ruapreta@texpar.com  / senha forte
+      admin.gregorio@texpar.com  / senha forte
+
+    Depois de criar cada admin, clique no usuário para ver o "User UID"
+    (formato: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) e copie.
+
+  ASSOCIAR ADMINS ÀS LOJAS:
+    Volte ao SQL Editor → "New query" e cole:
+
+    INSERT INTO store_admins (user_id, loja) VALUES
+      ('COLE_UID_CENTRO_AQUI',   'centro'),
+      ('COLE_UID_SAIDA_AQUI',    'saida'),
+      ('COLE_UID_RUAPRETA_AQUI', 'rua-preta'),
+      ('COLE_UID_GREGORIO_AQUI', 'gregorio');
+
+    Substitua cada "COLE_UID_..." pelo UUID copiado e clique em Run.
+    (Se quiser criar só os admins das lojas que desejar, pode fazer
+     um INSERT por vez, sem problema.)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PASSO 4 — Configurar as credenciais no site
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. No Supabase → "Project Settings" (engrenagem) → "API".
+2. Copie:
+     - "Project URL"  (ex: https://abcdefgh.supabase.co)
+     - "anon public"  (chave longa começando com eyJ...)
+
+3. Abra o "index.html" com o Bloco de Notas.
+4. Localize as duas linhas no início do <script>:
+
+     const SUPABASE_URL = 'COLOQUE_SUA_URL_AQUI';
+     const SUPABASE_KEY = 'COLOQUE_SUA_ANON_KEY_AQUI';
+
+5. Substitua os valores entre aspas. Exemplo:
+
+     const SUPABASE_URL = 'https://abcdefgh.supabase.co';
+     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+
+6. Salve o arquivo (Ctrl+S).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PASSO 5 — Publicar o site no Netlify (gratuito)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Acesse: https://netlify.com → crie conta gratuita.
+2. Na tela inicial: "Sites" → "Add new site" → "Deploy manually".
+3. Arraste a PASTA "texpar-dashboard" para a área indicada.
+4. Aguarde — o site será publicado com uma URL automática.
+   Renomeie em: Site configuration → Site name.
+
+Pronto! Compartilhe a URL com os colaboradores.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  COMO USAR NO DIA A DIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  VISUALIZADOR (vendedor, gerente):
+    1. Acessa o site e faz login com seu e-mail e senha.
+    2. Vê o ranking completo com abas por loja.
+    3. Não tem acesso a nenhum botão de edição.
+
+  ADMIN DE LOJA (quem alimenta os dados):
+    1. Acessa o site e faz login com e-mail e senha de admin.
+    2. Vê o ranking + botão "Editar dados" no rodapé.
+    3. Clica em "Editar dados", atualiza vendas e metas dos
+       vendedores da SUA loja, clica em "Salvar".
+    4. O ranking atualiza em tempo real para todos os usuários.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  DÚVIDAS FREQUENTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+P: O site mostra "Configure o Supabase".
+R: Você não editou as credenciais no index.html (Passo 4).
+
+P: Erro "E-mail ou senha incorretos".
+R: Verifique se o usuário foi criado em Authentication → Users
+   com exatamente esse e-mail e se a senha está correta.
+
+P: Admin entrou mas não vê o botão "Editar dados".
+R: O user_id não foi inserido em store_admins. Refaça o
+   INSERT com o UUID correto (Passo 3).
+
+P: Um admin consegue editar outra loja?
+R: Não. O banco de dados bloqueia isso automaticamente (RLS).
+
+P: Como trocar a senha de um usuário?
+R: Supabase → Authentication → Users → clique no usuário
+   → "Send password reset" ou edite diretamente.
+
+P: Quero adicionar um novo vendedor.
+R: Supabase → Table Editor → vendors → "Insert row".
+   Preencha: id (próximo número), name, loja, sales: 0, goal: 0.
+
+P: Quero dar acesso a mais pessoas para visualizar.
+R: Só criar mais usuários em Authentication → Users.
+   Sem INSERT em store_admins = acesso somente leitura.
+
+═══════════════════════════════════════════════════════════════════

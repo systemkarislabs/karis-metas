@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Karis Metas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/htm/dist/htm.umd.js"></script>
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg:#F9FAFB; --s1:#FFFFFF; --s2:#F3F4F6; --s3:#E5E7EB;
+      --text:#111827; --muted:#6B7280;
+      --border:rgba(0,0,0,0.08); --border-mid:rgba(0,0,0,0.12);
+      --centro:#EF9F27; --saida:#1D9E75; --rp:#378ADD; --greg:#D4537E;
+      --above:#22D3A0; --near:#FBBF24; --below:#F87171;
+      --fin:#A78BFA;
+      --accent:#22D3A0; --accent2:#38BDF8;
+      --sidebar-w:220px;
+    }
+    html, body, #root { height:100%; }
+    body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+    body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E"); opacity:.025; pointer-events:none; z-index:9000; }
+    body::after { content:''; position:fixed; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--centro),var(--saida),var(--rp),var(--greg)); z-index:9002; }
+    ::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.12); border-radius:3px; }
+
+    /* ── LOGIN PAGE ──────────────────────────────────── */
+    .login-page { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem 1.25rem; position:relative; overflow:hidden; }
+    .login-glow { position:absolute; width:700px; height:700px; border-radius:50%; background:radial-gradient(circle,rgba(34,211,160,.07) 0%,transparent 70%); top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; }
+    .login-card { background:var(--s1); border:1px solid var(--border-mid); border-radius:24px; padding:2.5rem 2rem; width:100%; max-width:420px; position:relative; z-index:1; box-shadow:0 32px 80px rgba(0,0,0,.15); }
+    .login-logo-wrap { display:flex; flex-direction:column; align-items:center; margin-bottom:1.25rem; gap:0; }
+    .login-logo { width:180px; height:auto; margin-bottom:-55px; }
+    .login-client-chip { font-family:'Barlow Condensed',sans-serif; font-size:9px; font-weight:700; letter-spacing:2.5px; color:rgba(0,0,0,.22); margin-bottom:8px; }
+    .login-product-name { font-family:'Bebas Neue',sans-serif; font-size:38px; letter-spacing:6px; line-height:1; background:linear-gradient(135deg,#22D3A0,#38BDF8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:8px; }
+    .karis-labs-pill { display:inline-flex; align-items:center; gap:6px; background:rgba(34,211,160,.07); border:1px solid rgba(34,211,160,.18); border-radius:20px; padding:4px 14px; margin-bottom:10px; }
+    .karis-k { width:18px; height:18px; border-radius:5px; background:linear-gradient(135deg,#22D3A0,#38BDF8); display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue',sans-serif; font-size:11px; color:#0D0D0D; flex-shrink:0; }
+    .karis-labs-text { font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; color:rgba(34,211,160,.65); }
+    .login-sub { font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:600; letter-spacing:3px; color:rgba(17,17,22,.45); text-align:center; }
+    .login-divider { height:1px; background:var(--border); margin:0 0 1.25rem; }
+    .store-pills { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-bottom:1.25rem; }
+    .store-pill { font-family:'Barlow Condensed',sans-serif; font-size:10px; font-weight:700; letter-spacing:1.5px; padding:3px 10px; border-radius:20px; border:1px solid; }
+    .login-tabs { display:flex; background:var(--s2); border-radius:10px; padding:3px; gap:3px; margin-bottom:1.5rem; }
+    .login-tab { flex:1; padding:9px 6px; border:none; border-radius:8px; background:transparent; color:var(--muted); font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; letter-spacing:1px; cursor:pointer; transition:all .2s; white-space:nowrap; }
+    .login-tab:hover { color:var(--text); }
+    .login-tab.active { background:var(--s1); color:var(--text); box-shadow:0 2px 8px rgba(0,0,0,.4); }
+    .login-tab.active.tab-vendor { border-bottom:2px solid var(--centro); }
+    .login-tab.active.tab-admin  { border-bottom:2px solid var(--rp); }
+    .login-field { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+    .login-label { font-size:11px; color:var(--muted); letter-spacing:1.5px; font-family:'Barlow Condensed',sans-serif; font-weight:700; }
+    .login-select, .login-input { width:100%; padding:13px 16px; background:var(--s2); border:1px solid var(--border); border-radius:10px; font-size:14px; color:var(--text); font-family:'Inter',sans-serif; outline:none; transition:border-color .2s; appearance:none; }
+    .login-select:focus, .login-input:focus { border-color:rgba(34,211,160,.5); }
+    .login-select option { background:var(--s2); }
+    .login-err { font-size:12px; color:var(--below); text-align:center; padding:8px 12px; background:rgba(248,113,113,.08); border:1px solid rgba(248,113,113,.2); border-radius:8px; margin-bottom:4px; }
+    .login-btn { width:100%; padding:14px; border:none; border-radius:12px; cursor:pointer; font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:3px; transition:all .2s; margin-top:4px; }
+    .login-btn-vendor { background:linear-gradient(135deg,var(--centro),#F59E0B); color:#0D0D0D; }
+    .login-btn-vendor:hover { opacity:.9; transform:translateY(-1px); box-shadow:0 8px 24px rgba(239,159,39,.3); }
+    .login-btn-admin  { background:linear-gradient(135deg,var(--rp),#B83A67); color:#fff; }
+    .login-btn-admin:hover  { opacity:.9; transform:translateY(-1px); box-shadow:0 8px 24px rgba(212,83,126,.3); }
+    .login-desc { font-size:13px; color:var(--muted); line-height:1.65; text-align:center; margin-bottom:1.25rem; }
+    .login-footer { text-align:center; margin-top:1.5rem; font-size:11px; color:rgba(107,114,128,.4); letter-spacing:1px; line-height:1.8; }
+    .karis-credit { font-size:10px; color:rgba(34,211,160,.45); letter-spacing:1.5px; font-family:'Barlow Condensed',sans-serif; font-weight:700; }
+
+    /* ── SIDEBAR ─────────────────────────────────────── */
+    .sidebar {
+      width:var(--sidebar-w); flex-shrink:0;
+      background:var(--s1); border-right:1px solid var(--border);
+      display:flex; flex-direction:column;
+      position:fixed; top:0; left:0; bottom:0; z-index:100;
+    }
+    .sidebar-logo {
+      height:56px; display:flex; align-items:center; gap:10px;
+      padding:0 18px; border-bottom:1px solid var(--border); flex-shrink:0;
+    }
+    .sidebar-k {
+      width:30px; height:30px; border-radius:8px;
+      background:linear-gradient(135deg,#22D3A0,#38BDF8);
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .sidebar-k span { font-family:'Bebas Neue',sans-serif; color:#0D0D0D; font-size:17px; line-height:1; }
+    .sidebar-brand-name { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:3px; line-height:1; background:linear-gradient(135deg,#22D3A0,#38BDF8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .sidebar-brand-sub  { font-family:'Barlow Condensed',sans-serif; font-size:9px; letter-spacing:2px; color:rgba(34,211,160,.4); line-height:1.4; }
+    .sidebar-nav { flex:1; padding:12px 10px; display:flex; flex-direction:column; gap:2px; overflow-y:auto; }
+    .sidebar-section-label { font-family:'Barlow Condensed',sans-serif; font-size:9px; font-weight:700; letter-spacing:2px; color:var(--muted); text-transform:uppercase; padding:10px 12px 4px; }
+    .sidebar-item {
+      display:flex; align-items:center; gap:10px;
+      width:100%; padding:8px 12px; border-radius:8px;
+      border:none; cursor:pointer; background:transparent;
+      color:var(--muted); font-size:13px; font-weight:400;
+      font-family:'Barlow Condensed',sans-serif; letter-spacing:.5px;
+      text-align:left; position:relative;
+      border-right:3px solid transparent;
+      transition:all .15s;
+    }
+    .sidebar-item:hover { background:var(--s2); color:var(--text); }
+    .sidebar-item.active { background:rgba(34,211,160,.08); color:var(--accent); font-weight:700; border-right-color:var(--accent); }
+    .sidebar-item .item-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .sidebar-sep { height:1px; background:var(--border); margin:8px 10px; }
+    .sidebar-bottom { padding:10px 10px 16px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:4px; flex-shrink:0; }
+    .sidebar-user { display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; background:var(--s2); margin-bottom:4px; }
+    .sidebar-user-dot { width:7px; height:7px; border-radius:50%; background:var(--above); flex-shrink:0; }
+    .sidebar-user-name { font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; letter-spacing:.5px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
+    .sidebar-action { display:flex; align-items:center; gap:8px; width:100%; padding:8px 12px; border-radius:8px; border:none; cursor:pointer; background:transparent; color:var(--muted); font-size:12px; font-weight:700; font-family:'Barlow Condensed',sans-serif; letter-spacing:.8px; text-align:left; transition:all .15s; }
+    .sidebar-action:hover { background:var(--s2); color:var(--text); }
+    .sidebar-action.admin { color:var(--centro); }
+    .sidebar-action.admin:hover { background:rgba(239,159,39,.1); }
+    .sidebar-action.logout:hover { background:rgba(248,113,113,.08); color:var(--below); }
+
+    /* ── MAIN AREA ───────────────────────────────────── */
+    .main-wrap { margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column; min-height:100vh; }
+    .topbar { height:48px; background:rgba(255,255,255,.97); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 24px; gap:8px; position:sticky; top:0; z-index:50; flex-shrink:0; }
+    .topbar-crumb { display:flex; align-items:center; gap:6px; }
+    .topbar-crumb span { font-family:'Barlow Condensed',sans-serif; font-size:11px; color:var(--muted); letter-spacing:.5px; }
+    .topbar-crumb strong { font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:700; letter-spacing:1px; color:var(--text); }
+    .topbar-dot { color:var(--muted); }
+
+    /* ── PAGE ────────────────────────────────────────── */
+    .page { padding:28px 28px 72px; }
+    .sec-label { font-family:'Barlow Condensed',sans-serif; font-size:10px; letter-spacing:4px; color:var(--muted); text-align:center; margin-bottom:20px; display:flex; align-items:center; gap:12px; }
+    .sec-label::before,.sec-label::after { content:''; flex:1; height:1px; background:rgba(0,0,0,.07); }
+    .section-title { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:4px; margin-bottom:20px; display:flex; align-items:center; gap:12px; }
+    .section-title::after { content:''; flex:1; height:1px; background:rgba(0,0,0,.07); }
+    .section-gap { margin-top:40px; }
+
+    /* ── PODIUM ──────────────────────────────────────── */
+    .podium { display:flex; gap:12px; align-items:flex-end; margin-bottom:28px; }
+    .p-card { flex:1; border-radius:16px; padding:20px 14px 16px; text-align:center; position:relative; overflow:hidden; opacity:0; transform:translateY(24px); transition:opacity .5s ease,transform .5s ease; }
+    .p-card.in { opacity:1; transform:translateY(0); }
+    .p-card:hover { transform:translateY(-5px)!important; }
+    .p-card.rank1 { padding-top:32px; order:2; }
+    .p-card.rank2 { order:1; }
+    .p-card.rank3 { order:3; }
+    .p-card::before { content:''; position:absolute; top:0; left:-120%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(0,0,0,.04),transparent); animation:sweep 4s ease-in-out infinite; }
+    @keyframes sweep { 0%{left:-120%} 60%{left:150%} 100%{left:150%} }
+    .crown { font-size:26px; display:block; margin-bottom:6px; }
+    .p-badge { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue',sans-serif; font-size:14px; margin:0 auto 10px; }
+    .p-avatar { width:54px; height:54px; border-radius:50%; background:var(--s3); border:2px solid; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue',sans-serif; font-size:18px; position:relative; z-index:1; }
+    .rank1 .p-avatar { width:66px; height:66px; font-size:22px; }
+    .p-name { font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:2px; margin-bottom:4px; }
+    .rank1 .p-name { font-size:19px; }
+    .p-loja-tag { font-family:'Barlow Condensed',sans-serif; font-size:10px; font-weight:700; letter-spacing:2px; padding:2px 10px; border-radius:20px; border:1px solid; display:inline-block; margin-bottom:10px; }
+    .p-pct { font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:1px; line-height:1; }
+    .rank1 .p-pct { font-size:44px; }
+    .p-pct-sub { font-size:9px; color:var(--muted); letter-spacing:2px; margin-bottom:4px; }
+    .p-nums { font-size:11px; color:var(--muted); letter-spacing:.5px; margin-bottom:6px; }
+    .p-nps { font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:700; letter-spacing:1px; padding:2px 8px; border-radius:4px; display:inline-block; margin-bottom:8px; }
+    .p-bar { height:3px; border-radius:2px; background:rgba(0,0,0,.07); overflow:hidden; margin-top:4px; }
+    .p-bar-fill { height:100%; border-radius:2px; transition:width 1.2s cubic-bezier(.4,0,.2,1); }
+
+    /* ── ROWS ────────────────────────────────────────── */
+    .rest-list { display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
+    .v-row { display:flex; align-items:center; gap:12px; padding:12px 16px; background:var(--s1); border-radius:10px; border:1px solid var(--border); border-left:3px solid transparent; opacity:0; animation:slideIn .4s ease forwards; transition:background .2s,transform .2s; }
+    .v-row:hover { background:var(--s2); transform:translateX(4px); }
+    @keyframes slideIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:none} }
+    .v-rank { font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--muted); min-width:30px; text-align:center; }
+    .v-av { width:38px; height:38px; border-radius:50%; background:var(--s3); border:2px solid; display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue',sans-serif; font-size:13px; flex-shrink:0; }
+    .v-info { flex:1; min-width:0; }
+    .v-name { font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; letter-spacing:.5px; }
+    .v-store { font-size:10px; letter-spacing:1.5px; opacity:.75; }
+    .v-detail { font-size:11px; color:var(--muted); margin-top:1px; }
+    .v-bar-wrap { flex:1; max-width:180px; }
+    .v-bar { height:4px; background:rgba(0,0,0,.06); border-radius:2px; overflow:hidden; }
+    .v-bar-fill { height:100%; border-radius:2px; transition:width 1s cubic-bezier(.4,0,.2,1); }
+    .v-right { display:flex; flex-direction:column; align-items:flex-end; gap:3px; min-width:64px; }
+    .v-pct { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:1px; line-height:1; }
+    .v-nps-tag { font-family:'Barlow Condensed',sans-serif; font-size:10px; font-weight:700; letter-spacing:1px; padding:1px 7px; border-radius:4px; }
+    .col-above { color:var(--above); } .col-near { color:var(--near); } .col-below { color:var(--below); }
+    .fin-badge { font-family:'Barlow Condensed',sans-serif; font-size:9px; font-weight:700; letter-spacing:2px; color:var(--fin); background:rgba(167,139,250,.12); border:1px solid rgba(167,139,250,.25); border-radius:4px; padding:1px 7px; display:inline-block; margin-left:6px; vertical-align:middle; }
+
+    /* ── CHALLENGES ──────────────────────────────────── */
+    .ch-bar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--s1); border:1px solid var(--border); border-radius:10px; margin-bottom:24px; }
+    .ch-user { font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1px; }
+    .ch-pts  { font-family:'Bebas Neue',sans-serif; font-size:24px; color:var(--centro); letter-spacing:2px; }
+    .ch-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:768px){.ch-grid{grid-template-columns:1fr;}}
+    .ch-lb { grid-column:1/-1; }
+    .card { background:var(--s1); border:1px solid var(--border); border-radius:16px; padding:1.25rem; transition:border-color .2s; }
+    .card:hover { border-color:var(--border-mid); }
+    .card-head { display:flex; align-items:center; gap:12px; margin-bottom:1.25rem; }
+    .card-icon  { font-size:28px; }
+    .card-title { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; }
+    .card-sub   { font-size:11px; color:var(--muted); letter-spacing:1px; }
+    .quiz-q    { font-size:14px; line-height:1.6; margin-bottom:1rem; }
+    .quiz-opts { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+    .quiz-opt  { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--s2); border:1px solid var(--border); border-radius:8px; text-align:left; cursor:pointer; font-family:'Inter',sans-serif; font-size:13px; color:var(--text); transition:all .15s; width:100%; }
+    .quiz-opt:hover:not([disabled]) { border-color:var(--border-mid); background:var(--s3); }
+    .quiz-opt[disabled] { cursor:default; }
+    .opt-l { width:22px; height:22px; border-radius:4px; flex-shrink:0; background:rgba(0,0,0,.08); display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue',sans-serif; font-size:13px; }
+    .opt-correct { border-color:var(--above)!important; background:rgba(34,211,160,.1)!important; }
+    .opt-correct .opt-l { background:var(--above); color:#0D0D0D; }
+    .opt-wrong   { border-color:var(--below)!important; background:rgba(248,113,113,.1)!important; }
+    .opt-wrong .opt-l { background:var(--below); color:#0D0D0D; }
+    .opt-dim { opacity:.38; }
+    .quiz-result { padding:10px 14px; border-radius:8px; font-size:13px; font-weight:500; margin-bottom:12px; }
+    .res-ok  { background:rgba(34,211,160,.1); color:var(--above); border:1px solid rgba(34,211,160,.3); }
+    .res-err { background:rgba(248,113,113,.1); color:var(--below); border:1px solid rgba(248,113,113,.3); }
+    .quiz-nav     { display:flex; justify-content:space-between; gap:8px; }
+    .quiz-nav-btn { padding:7px 16px; border-radius:8px; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; letter-spacing:1px; border:1px solid var(--border); background:transparent; color:var(--muted); transition:all .15s; }
+    .quiz-nav-btn:hover:not([disabled]) { color:var(--text); border-color:var(--border-mid); }
+    .quiz-nav-btn[disabled] { opacity:.3; cursor:not-allowed; }
+    .ci-desc  { font-size:13px; color:var(--muted); margin-bottom:1rem; line-height:1.6; }
+    .ci-form  { display:flex; flex-direction:column; gap:8px; margin-bottom:1rem; }
+    .ci-input { padding:10px 12px; background:var(--s2); border:1px solid var(--border); border-radius:8px; font-size:13px; color:var(--text); font-family:'Inter',sans-serif; outline:none; }
+    .ci-btn   { padding:10px; border-radius:8px; cursor:pointer; font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:2px; border:1px solid rgba(29,158,117,.4); background:rgba(29,158,117,.18); color:var(--saida); transition:all .15s; }
+    .ci-btn:hover { background:rgba(29,158,117,.3); }
+    .ci-history { display:flex; flex-direction:column; gap:6px; }
+    .ci-item { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:7px 10px; background:var(--s2); border-radius:6px; font-size:12px; }
+    .ci-item-name { font-weight:600; } .ci-item-cl,.ci-item-dt { color:var(--muted); } .ci-item-dt { margin-left:auto; }
+    .lb-empty { text-align:center; color:var(--muted); font-size:13px; padding:1.5rem; }
+    .lb-list  { display:flex; flex-direction:column; gap:6px; }
+    .lb-row   { display:flex; align-items:center; gap:12px; padding:10px 14px; background:var(--s2); border-radius:10px; opacity:0; animation:slideIn .4s ease forwards; transition:background .2s; }
+    .lb-row:hover { background:var(--s3); }
+    .lb-rank  { font-family:'Bebas Neue',sans-serif; font-size:18px; color:var(--muted); min-width:24px; }
+    .lb-av    { width:32px; height:32px; border-radius:50%; background:var(--s3); border:2px solid; display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue',sans-serif; font-size:12px; }
+    .lb-name  { flex:1; font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; }
+    .lb-store { font-size:11px; color:var(--muted); }
+    .lb-score { font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--centro); letter-spacing:1px; }
+    .lb-score span { font-size:11px; color:var(--muted); margin-left:2px; }
+
+    /* ── ADMIN MODAL ─────────────────────────────────── */
+    .overlay { position:fixed; inset:0; z-index:500; background:rgba(0,0,0,.82); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; padding:1.5rem; }
+    .admin-modal { background:var(--s1); border:1px solid var(--border-mid); border-radius:20px; width:100%; max-width:600px; max-height:90vh; overflow-y:auto; }
+    .modal-hd { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--s1); z-index:2; }
+    .modal-ttl { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px; }
+    .modal-x { width:30px; height:30px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; font-size:13px; }
+    .modal-body { padding:1.25rem 1.5rem; }
+    .modal-hint { font-size:11px; color:var(--muted); margin-bottom:1.25rem; letter-spacing:1px; }
+    .admin-store-section { margin-bottom:24px; }
+    .admin-store-label { font-family:'Barlow Condensed',sans-serif; font-size:12px; font-weight:700; letter-spacing:2.5px; padding:8px 0; border-bottom:1px solid var(--border); margin-bottom:12px; }
+    .admin-vcard { background:var(--s2); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+    .admin-vcard-name { font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:.5px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
+    .admin-vcard-pct { font-family:'Bebas Neue',sans-serif; font-size:18px; }
+    .admin-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .admin-field { display:flex; flex-direction:column; gap:3px; }
+    .admin-field-label { font-size:9px; color:var(--muted); letter-spacing:1.5px; font-family:'Barlow Condensed',sans-serif; font-weight:700; }
+    .admin-input { width:70px; padding:6px 8px; text-align:right; background:var(--s3); border:1px solid var(--border); border-radius:7px; font-size:14px; color:var(--text); font-family:'Inter',sans-serif; outline:none; transition:border-color .15s; }
+    .admin-input:focus { border-color:var(--border-mid); }
+    .admin-divider-v { width:1px; height:32px; background:var(--border); align-self:center; }
+    .modal-save { width:100%; padding:12px; border:none; border-radius:10px; cursor:pointer; background:linear-gradient(135deg,var(--centro),#F59E0B); color:#0D0D0D; font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:2px; transition:all .2s; margin-top:8px; }
+    .modal-save.saved { background:linear-gradient(135deg,var(--above),var(--saida)); }
+
+    @media(max-width:900px){
+      .sidebar { transform:translateX(-100%); }
+      .main-wrap { margin-left:0; }
+      .v-bar-wrap { display:none; }
+    }
+    @media(max-width:640px){
+      .podium{gap:6px;} .p-card{padding:14px 8px 12px;} .rank1 .p-pct{font-size:34px;}
+      .v-row{padding:10px 12px;gap:8px;}
+    }
+    @media(max-width:460px){ .admin-input{width:60px;} }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const html = htm.bind(React.createElement);
+const { useState, useEffect } = React;
+
+const LOJAS = [
+  { id:'all',       label:'Todas',          color:'#9CA3AF', short:'TODAS'  },
+  { id:'centro',    label:'SC Centro',      color:'#EF9F27', short:'SC-C'   },
+  { id:'saida',     label:'SC Saída',       color:'#1D9E75', short:'SC-S'   },
+  { id:'rua-preta', label:'CRU Rua Preta',  color:'#378ADD', short:'CRU-RP' },
+  { id:'gregorio',  label:'CRU Gregório',   color:'#D4537E', short:'CRU-G'  },
+];
+
+const DEFAULT_VENDORS = [
+  {id:1,  name:'Rilton',      loja:'centro',    tipo:'vend', sales:87,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0},
+  {id:2,  name:'Helton',      loja:'centro',    tipo:'vend', sales:72,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0},
+  {id:3,  name:'Eduardo',     loja:'centro',    tipo:'vend', sales:65,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0},
+  {id:4,  name:'Mayra',       loja:'centro',    tipo:'fin',  sales:0,   goal:0,   inatives:12, inatives_goal:20, nps:0, nps_goal:0},
+  {id:5,  name:'Gilmar',      loja:'saida',     tipo:'vend', sales:103, goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0},
+  {id:6,  name:'Denilson',    loja:'saida',     tipo:'vend', sales:89,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0},
+  {id:7,  name:'Victor',      loja:'saida',     tipo:'vend', sales:81,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0},
+  {id:8,  name:'Lucas',       loja:'saida',     tipo:'vend', sales:58,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0},
+  {id:9,  name:'Esther',      loja:'saida',     tipo:'fin',  sales:0,   goal:0,   inatives:8,  inatives_goal:20, nps:0, nps_goal:0},
+  {id:10, name:'Higor',       loja:'rua-preta', tipo:'vend', sales:94,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0},
+  {id:11, name:'Monique',     loja:'rua-preta', tipo:'fin',  sales:0,   goal:0,   inatives:6,  inatives_goal:20, nps:0, nps_goal:0},
+  {id:12, name:'Wesley',      loja:'gregorio',  tipo:'vend', sales:102, goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0},
+  {id:13, name:'Thiago',      loja:'gregorio',  tipo:'vend', sales:79,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0},
+  {id:14, name:'Jean',        loja:'gregorio',  tipo:'vend', sales:55,  goal:100, inatives:0,  inatives_goal:0,  nps:0, nps_goal:0},
+  {id:15, name:'Ana Beatriz', loja:'gregorio',  tipo:'fin',  sales:0,   goal:0,   inatives:9,  inatives_goal:20, nps:0, nps_goal:0},
+];
+
+const QUIZZES = [
+  {id:1,week:'Semana 1',question:'Qual é a composição da malha Dry 3D?',options:['100% Algodão penteado','Poliéster com bandeira brasileira tecida na estrutura','Viscose com 5% elastano','Poliamida com lycra'],correct:1,tip:'Poliéster com bandeira brasileira tecida na estrutura do fio.'},
+  {id:2,week:'Semana 2',question:'Quantas cores tem o catálogo de Ribana Canelada atual?',options:['12 cores','18 cores','24 cores','32 cores'],correct:2,tip:'O catálogo atual conta com 24 opções de cores.'},
+  {id:3,week:'Semana 3',question:'Qual o principal diferencial do Cotton Texpar?',options:['Menor preço do mercado','Entrega expressa 24h','Fio 100% penteado com gramatura superior','Disponível apenas online'],correct:2,tip:'Fio 100% penteado com gramatura superior — durabilidade e toque únicos.'},
+];
+
+const VENDOR_PWD   = 'texpar123';
+const ADMIN_PWD    = 'texpar2025';
+const DATA_VERSION = 'v3';
+
+const getLoja   = id => LOJAS.find(l=>l.id===id) || LOJAS[1];
+const inits     = n  => n.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+const getPct    = v  => v.tipo==='fin'
+  ? (v.inatives_goal>0 ? Math.round((v.inatives/v.inatives_goal)*100) : 0)
+  : (v.goal>0 ? Math.round((v.sales/v.goal)*100) : 0);
+const getNpsPct = v  => v.nps_goal>0 ? Math.round((v.nps/v.nps_goal)*100) : null;
+const pctCls    = p  => p>=100?'col-above':p>=75?'col-near':'col-below';
+const npsCls    = p  => p>=100?'col-above':p>=80?'col-near':'col-below';
+const lsGet     = (k,d) => { try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;} };
+const lsSet     = (k,v) => { try{localStorage.setItem(k,JSON.stringify(v));}catch{} };
+
+function loadVendors() {
+  if (localStorage.getItem('tx-dv') !== DATA_VERSION) {
+    localStorage.removeItem('tx-v');
+    localStorage.setItem('tx-dv', DATA_VERSION);
+    return DEFAULT_VENDORS;
+  }
+  const stored = lsGet('tx-v', null);
+  if (!stored) return DEFAULT_VENDORS;
+  const storedMap = stored.reduce((m,v)=>({...m,[v.id]:v}), {});
+  return DEFAULT_VENDORS.map(def => {
+    const sv = storedMap[def.id];
+    if (!sv) return def;
+    return { ...def, sales:sv.sales??def.sales, goal:sv.goal??def.goal, inatives:sv.inatives??def.inatives, inatives_goal:sv.inatives_goal??def.inatives_goal, nps:sv.nps??def.nps, nps_goal:sv.nps_goal??def.nps_goal };
+  });
+}
+
+/* ─── App ────────────────────────────────────────────── */
+function App() {
+  const [page,      setPage]      = useState('ranking');
+  const [filter,    setFilter]    = useState('all');
+  const [vendors,   setVendors]   = useState(() => loadVendors());
+  const [quizAns,   setQuizAns]   = useState(() => lsGet('tx-q', {}));
+  const [checkins,  setCheckins]  = useState(() => lsGet('tx-ci',[]));
+  const [session,   setSession]   = useState(() => lsGet('tx-session', {role:null,name:null}));
+  const [showAdmin, setShowAdmin] = useState(false);
+
+  useEffect(()=>lsSet('tx-v',vendors),[vendors]);
+  useEffect(()=>lsSet('tx-q',quizAns),[quizAns]);
+  useEffect(()=>lsSet('tx-ci',checkins),[checkins]);
+  useEffect(()=>lsSet('tx-session',session),[session]);
+
+  function logout() { setSession({role:null,name:null}); setShowAdmin(false); setPage('ranking'); }
+
+  if (!session.role) {
+    return html`<${LoginPage} vendors=${vendors} onSession=${setSession} />`;
+  }
+
+  const currentLoja = LOJAS.find(l=>l.id===filter) || LOJAS[0];
+
+  return html`
+    <div style=${{display:'flex'}}>
+      <${Sidebar}
+        page=${page} setPage=${setPage}
+        filter=${filter} setFilter=${setFilter}
+        session=${session}
+        onAdmin=${()=>setShowAdmin(true)}
+        onLogout=${logout}
+      />
+      <div className="main-wrap">
+        <header className="topbar">
+          <div className="topbar-crumb">
+            <span>Karis Metas</span>
+            <span className="topbar-dot">·</span>
+            <strong>${page==='ranking'?'Ranking':'Desafios'}</strong>
+            ${filter!=='all' && html`
+              <span className="topbar-dot">·</span>
+              <strong style=${{color:currentLoja.color}}>${currentLoja.label}</strong>
+            `}
+          </div>
+          <div style=${{marginLeft:'auto',display:'flex',alignItems:'center',gap:8}}>
+            <div style=${{display:'flex',alignItems:'center',gap:6,padding:'4px 10px',borderRadius:8,background:'var(--s2)',border:'1px solid var(--border)'}}>
+              <div style=${{width:7,height:7,borderRadius:'50%',background:'var(--above)',flexShrink:0}}></div>
+              <span style=${{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,fontWeight:700,letterSpacing:'.5px'}}>
+                ${session.role==='admin'?'⚙ Admin':session.name}
+              </span>
+            </div>
+          </div>
+        </header>
+        <div className="page">
+          ${page==='ranking'
+            ? html`<${RankingPage} vendors=${vendors} filter=${filter} />`
+            : html`<${ChallengesPage} vendors=${vendors} quizAns=${quizAns} setQuizAns=${setQuizAns} checkins=${checkins} setCheckins=${setCheckins} session=${session} />`
+          }
+        </div>
+      </div>
+      ${showAdmin && session.role==='admin' && html`<${AdminModal} vendors=${vendors} setVendors=${setVendors} onClose=${()=>setShowAdmin(false)} />`}
+    </div>`;
+}
+
+/* ─── Sidebar ────────────────────────────────────────── */
+function Sidebar({page, setPage, filter, setFilter, session, onAdmin, onLogout}) {
+  return html`
+    <aside className="sidebar">
+      <div className="sidebar-logo">
+        <div className="sidebar-k"><span>K</span></div>
+        <div>
+          <div className="sidebar-brand-name">KARIS METAS</div>
+          <div className="sidebar-brand-sub">BY KARIS LABS</div>
+        </div>
+      </div>
+
+      <nav className="sidebar-nav">
+        <div className="sidebar-section-label">Navegação</div>
+        <button className=${'sidebar-item'+(page==='ranking'?' active':'')} onClick=${()=>setPage('ranking')}>
+          🏆 Ranking
+        </button>
+        <button className=${'sidebar-item'+(page==='challenges'?' active':'')} onClick=${()=>setPage('challenges')}>
+          ⚡ Desafios
+        </button>
+
+        <div className="sidebar-sep"></div>
+        <div className="sidebar-section-label">Lojas</div>
+
+        ${LOJAS.map(l=>html`
+          <button key=${l.id}
+            className=${'sidebar-item'+(filter===l.id?' active':'')}
+            style=${filter===l.id?{color:l.color,background:l.color+'12',borderRightColor:l.color}:{}}
+            onClick=${()=>setFilter(l.id)}>
+            <span className="item-dot" style=${{background:l.color}}></span>
+            ${l.label}
+          </button>`)}
+      </nav>
+
+      <div className="sidebar-bottom">
+        <div className="sidebar-user">
+          <div className="sidebar-user-dot"></div>
+          <span className="sidebar-user-name">${session.role==='admin'?'⚙ Admin':session.name}</span>
+        </div>
+        ${session.role==='admin' && html`
+          <button className="sidebar-action admin" onClick=${onAdmin}>
+            ⚙ Painel Admin
+          </button>`}
+        <button className="sidebar-action logout" onClick=${onLogout}>
+          ↩ Sair
+        </button>
+      </div>
+    </aside>`;
+}
+
+/* ─── LoginPage ──────────────────────────────────────── */
+function LoginPage({vendors, onSession}) {
+  const [tab,       setTab]       = useState('vendor');
+  const [selVendor, setSelVendor] = useState('');
+  const [pwd,       setPwd]       = useState('');
+  const [adminPwd,  setAdminPwd]  = useState('');
+  const [err,       setErr]       = useState('');
+
+  function switchTab(t) { setTab(t); setErr(''); setPwd(''); setAdminPwd(''); }
+
+  function enterVendor() {
+    if (!selVendor) { setErr('Selecione seu nome na lista.'); return; }
+    if (!pwd)       { setErr('Digite sua senha de acesso.'); return; }
+    if (pwd !== VENDOR_PWD) { setErr('Senha incorreta. Verifique com seu gerente.'); return; }
+    onSession({role:'vendor', name:selVendor});
+  }
+  function enterAdmin() {
+    if (!adminPwd) { setErr('Digite a senha de administrador.'); return; }
+    if (adminPwd === ADMIN_PWD) { onSession({role:'admin', name:'Admin'}); }
+    else setErr('Senha incorreta. Tente novamente.');
+  }
+
+  return html`
+    <div className="login-page">
+      <div className="login-glow"></div>
+      <div className="login-card">
+        <div className="login-logo-wrap">
+          <div className="login-client-chip">▸ CLIENTE</div>
+          <img className="login-logo" src="./logo-texpar-preto.png" alt="Texpar" />
+          <div className="login-product-name">KARIS METAS</div>
+          <div className="karis-labs-pill">
+            <div className="karis-k">K</div>
+            <span className="karis-labs-text">BY KARIS LABS</span>
+          </div>
+          <div className="login-sub">PLATAFORMA DE PERFORMANCE DE VENDAS</div>
+        </div>
+
+        <div className="store-pills">
+          ${LOJAS.filter(l=>l.id!=='all').map(l=>html`
+            <span key=${l.id} className="store-pill" style=${{color:l.color,borderColor:l.color+'55',background:l.color+'10'}}>${l.short}</span>`)}
+        </div>
+
+        <div className="login-divider"></div>
+
+        <div className="login-tabs">
+          <button className=${'login-tab tab-vendor'+(tab==='vendor'?' active':'')} onClick=${()=>switchTab('vendor')}>👤 Vendedor</button>
+          <button className=${'login-tab tab-admin'+(tab==='admin'?' active':'')}  onClick=${()=>switchTab('admin')}>⚙ Administrador</button>
+        </div>
+
+        ${tab==='vendor' ? html`
+          <div>
+            <p className="login-desc">Selecione seu nome e insira a senha para acessar o ranking e os desafios.</p>
+            <div className="login-field">
+              <label className="login-label">SEU NOME</label>
+              <select className="login-select" value=${selVendor} onChange=${e=>setSelVendor(e.target.value)}>
+                <option value="">Selecione seu nome...</option>
+                ${vendors.map(v=>html`
+                  <option key=${v.id} value=${v.name}>
+                    ${v.name}${v.tipo==='fin'?' (Financeiro)':''} — ${getLoja(v.loja).label}
+                  </option>`)}
+              </select>
+            </div>
+            <div className="login-field">
+              <label className="login-label">SENHA DE ACESSO</label>
+              <input className="login-input" type="password" placeholder="••••••••"
+                value=${pwd} onInput=${e=>setPwd(e.target.value)}
+                onKeyDown=${e=>e.key==='Enter'&&enterVendor()} />
+            </div>
+            ${err && html`<div className="login-err">${err}</div>`}
+            <button className="login-btn login-btn-vendor" onClick=${enterVendor}>ENTRAR</button>
+          </div>
+        ` : html`
+          <div>
+            <p className="login-desc">Acesso exclusivo para gerentes. Insira a senha de administrador.</p>
+            <div className="login-field">
+              <label className="login-label">SENHA DE ADMINISTRADOR</label>
+              <input className="login-input" type="password" placeholder="••••••••"
+                value=${adminPwd} onInput=${e=>setAdminPwd(e.target.value)}
+                onKeyDown=${e=>e.key==='Enter'&&enterAdmin()} />
+            </div>
+            ${err && html`<div className="login-err">${err}</div>`}
+            <button className="login-btn login-btn-admin" onClick=${enterAdmin}>ENTRAR COMO ADMIN</button>
+          </div>
+        `}
+
+        <div className="login-footer">
+          Texpar Malhas © ${new Date().getFullYear()}
+          <br/>
+          <span className="karis-credit">KARIS METAS · Desenvolvido por Karis Labs</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ─── RankingPage ────────────────────────────────────── */
+function RankingPage({vendors, filter}) {
+  const filtered = vendors
+    .filter(v => filter==='all' || v.loja===filter)
+    .map(v => ({...v, pct:getPct(v)}));
+
+  const vendas = filtered.filter(v=>v.tipo==='vend').sort((a,b)=>b.pct-a.pct);
+  const fin    = filtered.filter(v=>v.tipo==='fin').sort((a,b)=>b.pct-a.pct);
+  const mes    = new Date().toLocaleString('pt-BR',{month:'long',year:'numeric'}).toUpperCase();
+
+  return html`
+    <div>
+      <div className="sec-label" style=${{marginBottom:20}}>${mes}</div>
+
+      ${vendas.length>0 && html`
+        <div className="section-title">🏆 EQUIPE DE VENDAS</div>
+        ${vendas.length>=3 && html`
+          <div className="podium">
+            ${html`<${PodCard} v=${vendas[1]} rank=${2} delay=${120} />`}
+            ${html`<${PodCard} v=${vendas[0]} rank=${1} delay=${0}   />`}
+            ${html`<${PodCard} v=${vendas[2]} rank=${3} delay=${240} />`}
+          </div>`}
+        ${vendas.length<3 && html`
+          <div className="rest-list" style=${{marginBottom:20}}>
+            ${vendas.map((v,i)=>html`<${VRow} key=${v.id} v=${v} rank=${i+1} delay=${i*70} label=${'VENDAS'} />`)}
+          </div>`}
+        ${vendas.length>=3 && vendas.slice(3).length>0 && html`
+          <div className="rest-list">
+            ${vendas.slice(3).map((v,i)=>html`<${VRow} key=${v.id} v=${v} rank=${i+4} delay=${i*70} label=${'VENDAS'} />`)}
+          </div>`}
+      `}
+
+      ${fin.length>0 && html`
+        <div className=${'section-title'+(vendas.length>0?' section-gap':'')}>💼 EQUIPE FINANCEIRO</div>
+        <div style=${{marginBottom:8,fontSize:11,color:'var(--muted)',letterSpacing:'1px',fontFamily:"'Barlow Condensed',sans-serif"}}>
+          RANKING POR CLIENTES INATIVOS RECUPERADOS
+        </div>
+        <div className="rest-list">
+          ${fin.map((v,i)=>html`<${VRow} key=${v.id} v=${v} rank=${i+1} delay=${i*70} label=${'INATIVOS'} isFin=${true} />`)}
+        </div>
+      `}
+
+      ${filtered.length===0 && html`
+        <div style=${{textAlign:'center',color:'var(--muted)',padding:'3rem',fontSize:14}}>Nenhum colaborador nesta loja.</div>`}
+    </div>`;
+}
+
+/* ─── PodCard ────────────────────────────────────────── */
+function PodCard({v, rank, delay}) {
+  const [vis,setVis] = useState(false);
+  const [bar,setBar] = useState(0);
+  const li  = getLoja(v.loja);
+  const nps = getNpsPct(v);
+  const rc  = {
+    1:{bg:'#FFFBF0',border:li.color+'66',glow:li.color+'22',badge:'#EF9F27',bt:'#0D0D0D'},
+    2:{bg:'#F9FAFB',border:'#9CA3AF88',glow:'#9CA3AF22',badge:'#9CA3AF',bt:'#0D0D0D'},
+    3:{bg:'#FFF8F3',border:'#CD7F3266',glow:'#CD7F3222',badge:'#CD7F32',bt:'#0D0D0D'},
+  }[rank];
+  useEffect(()=>{
+    const t1=setTimeout(()=>setVis(true),delay+80);
+    const t2=setTimeout(()=>setBar(Math.min(v.pct,100)),delay+300);
+    return ()=>{clearTimeout(t1);clearTimeout(t2);};
+  },[delay,v.pct]);
+  return html`
+    <div className=${'p-card rank'+rank+(vis?' in':'')}
+         style=${{background:rc.bg,border:'1.5px solid '+rc.border,boxShadow:'0 0 36px '+rc.glow}}>
+      ${rank===1 && html`<span className="crown">👑</span>`}
+      <div className="p-badge" style=${{background:rc.badge,color:rc.bt}}>${rank}°</div>
+      <div className="p-avatar" style=${{borderColor:li.color}}>${inits(v.name)}</div>
+      <div className="p-name">${v.name.toUpperCase()}</div>
+      <div className="p-loja-tag" style=${{color:li.color,borderColor:li.color+'55'}}>${li.short}</div>
+      <div className=${'p-pct '+pctCls(v.pct)}>${v.pct}%</div>
+      <div className="p-pct-sub">${v.tipo==='fin'?'INATIVOS':'DA META'}</div>
+      <div className="p-nums">${v.tipo==='fin'?v.inatives+' / '+v.inatives_goal+' clientes':v.sales+' / '+v.goal+' un.'}</div>
+      ${nps!==null && html`<div className=${'p-nps '+npsCls(nps)} style=${{background:'rgba(167,139,250,.1)',color:'var(--fin)'}}>NPS ${v.nps}/${v.nps_goal}</div>`}
+      <div className="p-bar"><div className="p-bar-fill" style=${{width:bar+'%',background:li.color}} /></div>
+    </div>`;
+}
+
+/* ─── VRow ───────────────────────────────────────────── */
+function VRow({v, rank, delay, label, isFin}) {
+  const [bar,setBar] = useState(0);
+  const li  = getLoja(v.loja);
+  const nps = getNpsPct(v);
+  useEffect(()=>{
+    const t=setTimeout(()=>setBar(Math.min(v.pct,100)),delay+120);
+    return ()=>clearTimeout(t);
+  },[delay,v.pct]);
+  const detail = isFin
+    ? (v.inatives_goal>0 ? v.inatives+' / '+v.inatives_goal+' clientes inativos' : '')
+    : (v.goal>0 ? v.sales+' / '+v.goal+' un.' : '');
+  return html`
+    <div className="v-row" style=${{animationDelay:delay+'ms',borderLeftColor:isFin?'var(--fin)':li.color}}>
+      <div className="v-rank">${rank}</div>
+      <div className="v-av" style=${{borderColor:isFin?'var(--fin)':li.color}}>${inits(v.name)}</div>
+      <div className="v-info">
+        <div className="v-name">
+          ${v.name}
+          ${isFin && html`<span className="fin-badge">FIN</span>`}
+        </div>
+        <div className="v-store" style=${{color:isFin?'var(--fin)':li.color}}>${li.label}</div>
+        ${detail && html`<div className="v-detail">${detail}</div>`}
+      </div>
+      <div className="v-bar-wrap">
+        <div className="v-bar"><div className="v-bar-fill" style=${{width:bar+'%',background:isFin?'var(--fin)':li.color}} /></div>
+      </div>
+      <div className="v-right">
+        <div className=${'v-pct '+pctCls(v.pct)}>${v.pct}%</div>
+        ${nps!==null && html`<div className=${'v-nps-tag '+npsCls(nps)} style=${{background:'rgba(167,139,250,.1)',color:'var(--fin)'}}>NPS ${v.nps}</div>`}
+      </div>
+    </div>`;
+}
+
+/* ─── ChallengesPage ─────────────────────────────────── */
+function ChallengesPage({vendors, quizAns, setQuizAns, checkins, setCheckins, session}) {
+  const [qIdx,  setQIdx]  = useState(0);
+  const [sel,   setSel]   = useState(null);
+  const [showR, setShowR] = useState(false);
+  const [ciCli, setCiCli] = useState('');
+  const uname = session.name;
+  const quiz  = QUIZZES[qIdx];
+  const prevA = quizAns[quiz&&quiz.id];
+
+  const qScores={}, ciScores={};
+  Object.entries(quizAns).forEach(([id,a])=>{
+    const q=QUIZZES.find(q=>q.id===Number(id));
+    if(!q||!a.correct)return;
+    qScores[a.name]=(qScores[a.name]||0)+10;
+  });
+  checkins.forEach(c=>{ciScores[c.name]=(ciScores[c.name]||0)+50;});
+
+  const allN=[...new Set([...vendors.map(v=>v.name),...Object.keys(qScores),...Object.keys(ciScores)])];
+  const board=allN.map(n=>({name:n,score:(qScores[n]||0)+(ciScores[n]||0),vendor:vendors.find(v=>v.name===n)}))
+    .filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+
+  function answer(idx){
+    if(prevA||sel!==null)return;
+    setSel(idx);setShowR(true);
+    setQuizAns(p=>({...p,[quiz.id]:{name:uname,answer:idx,correct:idx===quiz.correct}}));
+  }
+  function doCI(){
+    if(!ciCli.trim())return;
+    setCheckins(p=>[...p,{id:Date.now(),name:uname,client:ciCli.trim(),date:new Date().toLocaleDateString('pt-BR')}]);
+    setCiCli('');
+  }
+
+  const myScore=(qScores[uname]||0)+(ciScores[uname]||0);
+  const answered=showR||prevA;
+
+  return html`
+    <div>
+      <div className="ch-bar">
+        <span className="ch-user">⚡ ${uname}</span>
+        <span className="ch-pts">${myScore} <span style=${{fontSize:11,color:'var(--muted)'}}>PTS</span></span>
+      </div>
+      <div className="ch-grid">
+        <div className="card">
+          <div className="card-head"><span className="card-icon">🧠</span>
+            <div><div className="card-title">QUIZ DE PRODUTO</div><div className="card-sub">${quiz.week} · ${qIdx+1}/${QUIZZES.length}</div></div>
+          </div>
+          <p className="quiz-q">${quiz.question}</p>
+          <div className="quiz-opts">
+            ${quiz.options.map((opt,i)=>{
+              let cls='quiz-opt';
+              if(answered){
+                if(i===quiz.correct)cls+=' opt-correct';
+                else if(i===(sel??prevA.answer)&&i!==quiz.correct)cls+=' opt-wrong';
+                else cls+=' opt-dim';
+              }
+              return html`<button key=${i} className=${cls} disabled=${!!answered} onClick=${()=>answer(i)}>
+                <span className="opt-l">${String.fromCharCode(65+i)}</span>${opt}
+              </button>`;
+            })}
+          </div>
+          ${answered && html`
+            <div className=${'quiz-result '+(sel===quiz.correct||prevA.correct?'res-ok':'res-err')}>
+              ${sel===quiz.correct||prevA.correct?'🎉 Correto! +10 pontos':'❌ Errou! '+quiz.tip}
+            </div>`}
+          <div className="quiz-nav">
+            <button className="quiz-nav-btn" disabled=${qIdx===0} onClick=${()=>{setQIdx(q=>q-1);setSel(null);setShowR(false);}}>← Anterior</button>
+            <button className="quiz-nav-btn" disabled=${qIdx===QUIZZES.length-1} onClick=${()=>{setQIdx(q=>q+1);setSel(null);setShowR(false);}}>Próximo →</button>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-head"><span className="card-icon">📞</span>
+            <div><div className="card-title">DESAFIO SEMANAL</div><div className="card-sub">+50 pontos por check-in</div></div>
+          </div>
+          <p className="ci-desc">Marque um cliente que não compra há 3 semanas e registre o contato aqui.</p>
+          <div className="ci-form">
+            <input className="ci-input" placeholder="Nome do cliente contatado" value=${ciCli}
+              onInput=${e=>setCiCli(e.target.value)} onKeyDown=${e=>e.key==='Enter'&&doCI()} />
+            <button className="ci-btn" onClick=${doCI}>✓ REGISTRAR CHECK-IN</button>
+          </div>
+          ${checkins.filter(c=>c.name===uname).length>0 && html`
+            <div className="ci-history">
+              ${checkins.filter(c=>c.name===uname).slice(-4).reverse().map(c=>html`
+                <div key=${c.id} className="ci-item">
+                  <span className="ci-item-name">${c.name}</span>
+                  <span className="ci-item-cl">→ ${c.client}</span>
+                  <span className="ci-item-dt">${c.date}</span>
+                </div>`)}
+            </div>`}
+        </div>
+        <div className="card ch-lb">
+          <div className="card-head"><span className="card-icon">⚡</span>
+            <div><div className="card-title">RANKING DE PONTOS</div><div className="card-sub">Quiz (10 pts) + Check-in semanal (50 pts)</div></div>
+          </div>
+          ${board.length===0
+            ? html`<div className="lb-empty">Nenhuma pontuação ainda — seja o primeiro! 🏆</div>`
+            : html`<div className="lb-list">
+                ${board.map((e,i)=>{
+                  const li=e.vendor?getLoja(e.vendor.loja):{color:'#9CA3AF',label:'—'};
+                  return html`<div key=${e.name} className="lb-row" style=${{animationDelay:i*60+'ms'}}>
+                    <div className="lb-rank">${i+1}</div>
+                    <div className="lb-av" style=${{borderColor:li.color}}>${inits(e.name)}</div>
+                    <div style=${{flex:1}}><div className="lb-name">${e.name}</div><div className="lb-store" style=${{color:li.color}}>${li.label}</div></div>
+                    <div className="lb-score">${e.score}<span>pts</span></div>
+                  </div>`;
+                })}
+              </div>`}
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ─── AdminModal ─────────────────────────────────────── */
+function AdminModal({vendors, setVendors, onClose}) {
+  const [draft, setDraft] = useState(()=>
+    vendors.reduce((a,v)=>({...a,[v.id]:{
+      sales:v.sales, goal:v.goal,
+      inatives:v.inatives, inatives_goal:v.inatives_goal,
+      nps:v.nps, nps_goal:v.nps_goal
+    }}),{})
+  );
+  const [saved, setSaved] = useState(false);
+
+  function upd(id, field, val) { setDraft(p=>({...p,[id]:{...p[id],[field]:val}})); }
+  function previewPct(id, v) {
+    const d=draft[id];
+    if(v.tipo==='fin'){const n=Number(d.inatives)||0,g=Number(d.inatives_goal)||0;return g>0?Math.round((n/g)*100):0;}
+    const s=Number(d.sales)||0,g=Number(d.goal)||0;return g>0?Math.round((s/g)*100):0;
+  }
+  function save() {
+    setVendors(p=>p.map(v=>{
+      const d=draft[v.id];
+      return {...v, sales:Math.max(0,Number(d.sales)||0), goal:Math.max(0,Number(d.goal)||0), inatives:Math.max(0,Number(d.inatives)||0), inatives_goal:Math.max(0,Number(d.inatives_goal)||0), nps:Math.max(0,Number(d.nps)||0), nps_goal:Math.max(0,Number(d.nps_goal)||0) };
+    }));
+    setSaved(true); setTimeout(()=>setSaved(false),2200);
+  }
+
+  return html`
+    <div className="overlay" onClick=${e=>e.target===e.currentTarget&&onClose()}>
+      <div className="admin-modal">
+        <div className="modal-hd">
+          <span className="modal-ttl">⚙ PAINEL ADMIN</span>
+          <button className="modal-x" onClick=${onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <p className="modal-hint">INSIRA OS RESULTADOS E METAS DE CADA COLABORADOR</p>
+          ${LOJAS.filter(l=>l.id!=='all').map(l=>{
+            const grp=vendors.filter(v=>v.loja===l.id);
+            if(!grp.length) return null;
+            return html`
+              <div key=${l.id} className="admin-store-section">
+                <div className="admin-store-label" style=${{color:l.color}}>${l.label}</div>
+                ${grp.map(v=>{
+                  const d=draft[v.id];
+                  const pp=previewPct(v.id,v);
+                  const isFin=v.tipo==='fin';
+                  return html`
+                    <div key=${v.id} className="admin-vcard">
+                      <div className="admin-vcard-name">
+                        <span>${v.name} ${isFin?html`<span className="fin-badge">FIN</span>`:''}</span>
+                        <span className=${'admin-vcard-pct '+pctCls(pp)}>${pp}%</span>
+                      </div>
+                      <div className="admin-row">
+                        ${isFin ? html`
+                          <div className="admin-field"><span className="admin-field-label">INATIVOS</span>
+                            <input className="admin-input" type="number" min="0" value=${d.inatives} onInput=${e=>upd(v.id,'inatives',e.target.value)} /></div>
+                          <div className="admin-field"><span className="admin-field-label">META INAT.</span>
+                            <input className="admin-input" type="number" min="0" value=${d.inatives_goal} onInput=${e=>upd(v.id,'inatives_goal',e.target.value)} /></div>
+                        ` : html`
+                          <div className="admin-field"><span className="admin-field-label">VENDAS</span>
+                            <input className="admin-input" type="number" min="0" value=${d.sales} onInput=${e=>upd(v.id,'sales',e.target.value)} /></div>
+                          <div className="admin-field"><span className="admin-field-label">META</span>
+                            <input className="admin-input" type="number" min="0" value=${d.goal} onInput=${e=>upd(v.id,'goal',e.target.value)} /></div>
+                        `}
+                        <div className="admin-divider-v"></div>
+                        <div className="admin-field"><span className="admin-field-label">NPS</span>
+                          <input className="admin-input" type="number" min="0" max="100" value=${d.nps} onInput=${e=>upd(v.id,'nps',e.target.value)} /></div>
+                        <div className="admin-field"><span className="admin-field-label">META NPS</span>
+                          <input className="admin-input" type="number" min="0" max="100" value=${d.nps_goal} onInput=${e=>upd(v.id,'nps_goal',e.target.value)} /></div>
+                      </div>
+                    </div>`;
+                })}
+              </div>`;
+          })}
+          <button className=${'modal-save'+(saved?' saved':'')} onClick=${save}>
+            ${saved?'✓ SALVO COM SUCESSO!':'SALVAR DADOS'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(html`<${App} />`);
+</script>
+</body>
+</html>

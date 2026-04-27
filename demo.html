@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Texpar Malhas — DEMO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:      #F5F7FA;
+      --panel:   #FFFFFF;
+      --panel2:  #F0F2F6;
+      --gold:    #D4900A;
+      --gold2:   #E8A800;
+      --silver:  #7B8FA1;
+      --bronze:  #C4601A;
+      --green:   #1A9E5A;
+      --red:     #E53935;
+      --text:    #1A1A2E;
+      --muted:   #6B7280;
+      --accent:  #1565C0;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Rajdhani', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse at 10% 0%, rgba(212,144,10,.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 100%, rgba(21,101,192,.05) 0%, transparent 50%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── LOGIN ────────────────────────────────────────────────────── */
+    .login-screen {
+      display: flex; position: fixed; inset: 0; z-index: 500;
+      align-items: center; justify-content: center; padding: 1.5rem;
+      background: var(--bg); transition: opacity .4s ease;
+    }
+    .login-screen.hidden { opacity: 0; pointer-events: none; }
+
+    .login-card {
+      position: relative; z-index: 1;
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 20px; padding: 2.5rem 2rem; width: 100%; max-width: 400px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .login-logo { text-align: center; margin-bottom: 2rem; }
+    .login-logo img { width: 160px; height: auto; object-fit: contain; display: block; margin: 0 auto; }
+    .login-logo-sub {
+      font-family: 'Orbitron', monospace;
+      font-size: 9px; color: var(--muted); letter-spacing: 3px;
+      text-transform: uppercase; margin-top: 10px;
+    }
+    .login-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 15px; font-weight: 700; color: var(--text);
+      margin-bottom: 1.5rem; letter-spacing: 1px;
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-label { display: block; font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 2px; margin-bottom: 6px; text-transform: uppercase; }
+    .form-input {
+      width: 100%; padding: 12px 14px;
+      background: #F9FAFB; border: 1.5px solid #E5E7EB; border-radius: 10px;
+      font-size: 14px; font-family: 'Rajdhani', sans-serif; color: var(--text); outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .form-input::placeholder { color: #9CA3AF; }
+    .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(21,101,192,.12); background: #fff; }
+
+    .btn-login-submit {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, #1565C0, #0D47A1);
+      color: #fff; border: none; border-radius: 10px;
+      font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700;
+      cursor: pointer; margin-top: 6px; letter-spacing: 1px;
+      box-shadow: 0 4px 14px rgba(21,101,192,.35);
+      transition: box-shadow .15s, transform .1s;
+    }
+    .btn-login-submit:hover  { box-shadow: 0 6px 20px rgba(21,101,192,.5); }
+    .btn-login-submit:active { transform: scale(.98); }
+
+    .login-hint { text-align: center; font-size: 11px; color: var(--muted); margin-top: 1.5rem; letter-spacing: 1px; }
+    .login-demo-tip {
+      margin-top: 1.25rem; padding: 12px 14px;
+      background: #F0FBF6; border: 1px solid #A7F3D0; border-radius: 10px;
+      font-size: 12px; color: #065F46; text-align: center; line-height: 1.7;
+    }
+    .login-demo-tip code { background: #D1FAE5; padding: 1px 6px; border-radius: 4px; color: #065F46; }
+
+    /* ── APP ──────────────────────────────────────────────────────── */
+    .app { display: none; }
+    .app.visible { display: block; }
+
+    /* ── DEMO BANNER ──────────────────────────────────────────────── */
+    .demo-banner {
+      background: #FFFBEB; border-bottom: 1px solid #FDE68A;
+      padding: 10px 1.5rem; font-size: 12px; color: #92400E;
+      text-align: center; font-weight: 600; letter-spacing: 1px; position: relative; z-index: 1;
+    }
+
+    /* ── HEADER ───────────────────────────────────────────────────── */
+    .site-header {
+      position: sticky; top: 0; z-index: 100;
+      background: #FFFFFF;
+      border-bottom: 1px solid #E5E7EB;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.07); padding: 0 1.5rem;
+    }
+    .header-inner {
+      max-width: 960px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 88px; gap: 12px;
+    }
+    .brand-block { display: flex; align-items: center; gap: 16px; }
+    .brand-block img { height: 78px; width: auto; object-fit: contain; flex-shrink: 0; }
+    .brand-sub  { font-size: 13px; font-weight: 600; color: #374151; letter-spacing: 2px; text-transform: uppercase; white-space: nowrap; }
+    .brand-name { font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 900; color: var(--text); letter-spacing: 2px; white-space: nowrap; }
+    .brand-sub  { font-size: 10px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-top: 2px; white-space: nowrap; }
+    .header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .header-period { padding: 5px 14px; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 20px; font-size: 11px; color: var(--accent); letter-spacing: 1px; font-weight: 600; }
+    .header-user { display: flex; align-items: center; gap: 8px; }
+    .user-name { font-size: 13px; color: var(--text); font-weight: 600; }
+    .user-role-badge { font-size: 9px; font-weight: 700; padding: 3px 9px; border-radius: 20px; letter-spacing: 1px; text-transform: uppercase; }
+    .role-admin  { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+    .role-viewer { background: #F3F4F6; color: var(--muted); border: 1px solid #D1D5DB; }
+    .btn-sair {
+      font-size: 11px; padding: 6px 14px; border-radius: 8px;
+      border: 1px solid #E5E7EB; background: #F9FAFB;
+      color: var(--muted); cursor: pointer; font-family: 'Rajdhani', sans-serif;
+      font-weight: 600; letter-spacing: .5px; transition: all .15s;
+    }
+    .btn-sair:hover { background: #FEF2F2; color: var(--red); border-color: #FECACA; }
+
+    /* ── MAIN ─────────────────────────────────────────────────────── */
+    .main { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+
+    /* ── TABS ─────────────────────────────────────────────────────── */
+    .tabs { display: flex; gap: 4px; margin-bottom: 28px; background: var(--panel); border: 1px solid rgba(30,136,229,.2); border-radius: 10px; padding: 5px; overflow-x: auto; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { flex: 1; min-width: fit-content; padding: 9px 14px; border-radius: 7px; font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; text-align: center; border: none; background: none; outline: none; transition: all .25s; letter-spacing: .5px; white-space: nowrap; }
+    .tab.active { background: linear-gradient(135deg, #1565C0, #0D47A1); color: #fff; box-shadow: 0 0 16px rgba(21,101,192,.6); }
+    .tab:not(.active):hover { background: rgba(30,136,229,.1); color: var(--text); }
+
+    /* ── EMPTY / LOADING ──────────────────────────────────────────── */
+    .empty-state { text-align: center; padding: 3rem 1.5rem; color: var(--muted); font-size: 14px; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 3rem; color: var(--muted); font-size: 13px; gap: 8px; }
+    .spinner { width: 18px; height: 18px; border: 2px solid rgba(30,136,229,.2); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── PODIUM ───────────────────────────────────────────────────── */
+    .podium-title { font-family: 'Orbitron', monospace; font-size: 10px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; text-align: center; margin-bottom: 16px; }
+    .podium-title span { color: var(--gold); }
+    .podium { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 28px; }
+    .p-card { flex: 1; border-radius: 14px; padding: 20px 12px 16px; text-align: center; position: relative; overflow: hidden; transition: transform .3s; }
+    .p-card:hover { transform: translateY(-4px); }
+    .p-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%; background: linear-gradient(90deg, transparent, rgba(0,0,0,.07), transparent); animation: sweep 3.5s ease-in-out infinite; }
+    @keyframes sweep { 0%{left:-100%} 60%{left:150%} 100%{left:150%} }
+    .p-card::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, transparent, transparent 8px, rgba(0,0,0,.02) 8px, rgba(0,0,0,.02) 9px); pointer-events: none; }
+    .p-card.rank1 { background: linear-gradient(160deg, #FFFDF0 0%, #FEF9E7 100%); border: 1.5px solid rgba(212,144,10,.45); box-shadow: 0 4px 28px rgba(212,144,10,.14), 0 1px 8px rgba(0,0,0,.06); order: 2; }
+    .p-card.rank2 { background: linear-gradient(160deg, #F8FAFC 0%, #F1F5F9 100%); border: 1px solid rgba(148,163,184,.45); box-shadow: 0 4px 16px rgba(0,0,0,.06); order: 1; }
+    .p-card.rank3 { background: linear-gradient(160deg, #FFF8F5 0%, #FFF3ED 100%); border: 1px solid rgba(196,96,26,.3); box-shadow: 0 4px 16px rgba(196,96,26,.08); order: 3; }
+    .crown-icon { font-size: 26px; margin-bottom: 4px; display: block; filter: drop-shadow(0 0 10px rgba(255,179,0,.8)); }
+    .rank-badge { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; margin: 0 auto 8px; }
+    .rank1 .rank-badge { background: var(--gold); color: #1A1A00; box-shadow: 0 0 12px rgba(255,179,0,.6); }
+    .rank2 .rank-badge { background: var(--silver); color: #1E293B; }
+    .rank3 .rank-badge { background: var(--bronze); color: #fff; }
+    .avatar { width: 50px; height: 50px; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 900; position: relative; z-index: 1; }
+    .rank1 .avatar { background: linear-gradient(135deg, #FF8F00, #FFB300); color: #1A1A00; box-shadow: 0 0 0 3px rgba(255,179,0,.4), 0 0 20px rgba(255,179,0,.5); width: 58px; height: 58px; font-size: 16px; }
+    .rank2 .avatar { background: linear-gradient(135deg, #546E7A, #78909C); color: #fff; box-shadow: 0 0 0 2px rgba(176,190,197,.3); }
+    .rank3 .avatar { background: linear-gradient(135deg, #BF360C, #FF7043); color: #fff; box-shadow: 0 0 0 2px rgba(255,112,67,.3); }
+    .p-name { font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700; letter-spacing: 1px; margin-bottom: 3px; }
+    .rank1 .p-name { color: var(--gold2); font-size: 12px; }
+    .rank2 .p-name { color: #475569; }
+    .rank3 .p-name { color: #9A3412; }
+    .p-store-tag { font-size: 10px; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-bottom: 10px; font-weight: 600; }
+    .tag-centro { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+    .tag-sc     { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+    .tag-cru    { background: #F3E8FF; color: #6B21A8; border: 1px solid #D8B4FE; }
+    .tag-rp     { background: #DBEAFE; color: #1E40AF; border: 1px solid #93C5FD; }
+    .p-value { font-family: 'Orbitron', monospace; font-weight: 900; margin-bottom: 6px; }
+    .rank1 .p-value { font-size: 16px; color: var(--gold2); text-shadow: 0 0 16px rgba(255,213,79,.5); }
+    .rank2 .p-value, .rank3 .p-value { font-size: 13px; color: #1A1A2E; }
+    .pct-pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: .5px; }
+    .above { background: rgba(0,230,118,.15); color: var(--green); border: 1px solid rgba(0,230,118,.3); }
+    .near  { background: rgba(255,179,0,.15);  color: var(--gold);  border: 1px solid rgba(255,179,0,.3); }
+    .below { background: rgba(255,82,82,.15);  color: var(--red);   border: 1px solid rgba(255,82,82,.3); }
+
+    /* ── DIVIDER ──────────────────────────────────────────────────── */
+    .roll-divider { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .roll-line    { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(30,136,229,.4), transparent); }
+    .roll-icon    { font-size: 15px; opacity: .7; }
+    .roll-text    { font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+
+    /* ── LIST ─────────────────────────────────────────────────────── */
+    .list-header { display: grid; grid-template-columns: 40px 1fr 180px 110px; gap: 8px; padding: 6px 14px 8px; font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+    .list-header span:last-child { text-align: right; }
+    .row { display: grid; grid-template-columns: 40px 1fr 180px 110px; gap: 8px; align-items: center; padding: 12px 14px; background: var(--panel); border: 1px solid rgba(30,136,229,.12); border-radius: 10px; margin-bottom: 7px; transition: all .25s; position: relative; overflow: hidden; animation: slideIn .4s ease-out both; }
+    .row:hover { border-color: rgba(30,136,229,.4); background: var(--panel2); box-shadow: 0 0 20px rgba(30,136,229,.1); }
+    .row::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 3px 0 0 3px; background: rgba(30,136,229,.4); }
+    .row:hover::before { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    @keyframes slideIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:none} }
+    .row-rank { font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 700; color: var(--muted); text-align: center; }
+    .seller-info { display: flex; flex-direction: column; gap: 4px; }
+    .s-name { font-size: 15px; font-weight: 700; color: var(--text); }
+    .s-tag  { font-size: 10px; padding: 2px 8px; border-radius: 20px; display: inline-flex; width: fit-content; font-weight: 600; }
+    .prog-col { display: flex; flex-direction: column; gap: 5px; }
+    .prog-meta { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); }
+    .prog-track { height: 8px; border-radius: 4px; background: #E5E7EB; overflow: hidden; }
+    .prog-fill  { height: 100%; border-radius: 4px; position: relative; overflow: hidden; transition: width 1s cubic-bezier(.4,0,.2,1); }
+    .prog-fill::after { content: ''; position: absolute; top: 0; left: -80%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(0,0,0,.4), transparent); animation: thread-slide 2s ease-in-out infinite; }
+    @keyframes thread-slide { 0%{left:-80%} 100%{left:130%} }
+    .fill-gold   { background: linear-gradient(90deg, #FF8F00, #FFB300); }
+    .fill-green  { background: linear-gradient(90deg, #00897B, #00E676); }
+    .fill-blue   { background: linear-gradient(90deg, #1565C0, #42A5F5); }
+    .fill-purple { background: linear-gradient(90deg, #6A1B9A, #AB47BC); }
+    .val-col { text-align: right; }
+    .v-main  { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; color: var(--text); }
+    .v-meta  { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+    /* ── FOOTER ───────────────────────────────────────────────────── */
+    .card-footer { display: flex; align-items: center; justify-content: space-between; padding: 16px 4px; margin-top: 8px; }
+    .updated-at { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+    .btn-toggle-admin { font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; padding: 8px 18px; border-radius: 8px; letter-spacing: 1px; border: 1px solid rgba(0,230,118,.4); background: rgba(0,230,118,.1); color: var(--green); cursor: pointer; transition: all .15s; }
+    .btn-toggle-admin:hover { background: rgba(0,230,118,.2); box-shadow: 0 0 14px rgba(0,230,118,.25); }
+
+    /* ── ADMIN PANEL ──────────────────────────────────────────────── */
+    .admin-panel { margin-top: 24px; background: var(--panel); border: 1px solid rgba(30,136,229,.2); border-radius: 14px; padding: 1.5rem; }
+    .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+    .admin-title  { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; color: var(--gold2); letter-spacing: 1px; }
+    .admin-loja-badge { font-size: 10px; font-weight: 700; padding: 4px 12px; border-radius: 20px; letter-spacing: .5px; }
+    .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+    @media (max-width: 560px) { .admin-grid { grid-template-columns: 1fr; } }
+    .admin-vendor { background: var(--panel2); border: 1px solid rgba(30,136,229,.15); border-radius: 12px; padding: 14px; }
+    .admin-vendor-name { font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 12px; letter-spacing: 1px; }
+    .admin-field { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .admin-field:last-child { margin-bottom: 0; }
+    .admin-field-label { font-size: 10px; color: var(--muted); width: 44px; flex-shrink: 0; letter-spacing: 1px; text-transform: uppercase; }
+    .admin-input { flex: 1; padding: 8px 10px; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; font-size: 14px; font-family: 'Rajdhani', sans-serif; text-align: right; outline: none; color: var(--text); transition: border-color .15s, box-shadow .15s; }
+    .admin-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(30,136,229,.2); }
+    .btn-save { width: 100%; padding: 12px; background: linear-gradient(135deg, #1565C0, #0D47A1); color: #fff; border: none; border-radius: 10px; font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 1px; box-shadow: 0 0 20px rgba(21,101,192,.4); transition: box-shadow .15s; }
+    .btn-save:hover { box-shadow: 0 0 30px rgba(21,101,192,.7); }
+
+    /* ── TOAST ────────────────────────────────────────────────────── */
+    .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: #FFFFFF; border: 1px solid #6EE7B7; color: #065F46; padding: 12px 24px; border-radius: 12px; font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700; z-index: 400; transition: transform .3s cubic-bezier(.34,1.56,.64,1); pointer-events: none; white-space: nowrap; box-shadow: 0 4px 24px rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.04); }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 640px) {
+      .list-header, .row { grid-template-columns: 36px 1fr 100px; }
+      .list-header span:nth-child(3), .row .prog-col { display: none; }
+      .podium { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="/logo-texpar-preto.png" alt="Texpar Malhas">
+      <div class="login-logo-sub">Área Restrita — Colaboradores</div>
+    </div>
+    <p class="login-title">Acesso ao Sistema</p>
+    <div class="form-group">
+      <label class="form-label">E-mail</label>
+      <input class="form-input" type="email" id="demo-email" placeholder="seu@email.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Senha</label>
+      <input class="form-input" type="password" id="demo-pwd" placeholder="••••••••"
+             onkeydown="if(event.key==='Enter')demoLogin()">
+    </div>
+    <button class="btn-login-submit" onclick="demoLogin()">Entrar</button>
+    <div class="login-demo-tip">
+      🔐 <strong>Modo demonstração</strong><br>
+      Vendedor: <code>vendedor@texpar.com</code> / <code>1234</code><br>
+      Admin SC Centro: <code>centro@texpar.com</code> / <code>1234</code>
+    </div>
+    <p class="login-hint">Acesso exclusivo para colaboradores Texpar</p>
+  </div>
+</div>
+
+<!-- APLICAÇÃO -->
+<div class="app" id="app">
+  <div class="demo-banner">⚠️ Modo demonstração — os dados não são salvos</div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand-block">
+        <img src="/logo-texpar-preto.png" alt="Texpar Malhas">
+        <span class="brand-sub">Ranking de Vendas</span>
+      </div>
+      <div class="header-right">
+        <span class="header-period" id="header-period"></span>
+        <div class="header-user">
+          <span class="user-name" id="user-name"></span>
+          <span class="user-role-badge" id="user-role-badge"></span>
+        </div>
+        <button class="btn-sair" onclick="demoLogout()">Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <nav class="tabs" id="tabs"></nav>
+    <div id="ranking-content"></div>
+    <div class="card-footer">
+      <span class="updated-at" id="updated-at"></span>
+      <button class="btn-toggle-admin" id="btn-toggle-admin"
+              onclick="toggleAdminPanel()" style="display:none;">Editar dados ▾</button>
+    </div>
+    <div id="admin-panel" style="display:none;"></div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LOJAS = [
+  { id: 'centro',    label: 'SC — Centro',       color: '#EF9F27', barBg: '#FAEEDA', textColor: '#633806', tag: 'tag-centro', fill: 'fill-gold'   },
+  { id: 'saida',     label: 'SC — Saída',         color: '#1D9E75', barBg: '#E1F5EE', textColor: '#085041', tag: 'tag-sc',     fill: 'fill-green'  },
+  { id: 'rua-preta', label: 'CRU — Rua Preta',    color: '#378ADD', barBg: '#E6F1FB', textColor: '#0C447C', tag: 'tag-rp',     fill: 'fill-blue'   },
+  { id: 'gregorio',  label: 'CRU — Av. Gregório', color: '#D4537E', barBg: '#FBEAF0', textColor: '#4B1528', tag: 'tag-cru',    fill: 'fill-purple' },
+];
+
+// Dados de demonstração
+let vendors = [
+  { id:1,  name:'Rilton',   loja:'centro',    sales:42800, goal:50000 },
+  { id:2,  name:'Helton',   loja:'centro',    sales:38500, goal:50000 },
+  { id:3,  name:'Eduardo',  loja:'centro',    sales:31200, goal:45000 },
+  { id:4,  name:'Gilmar',   loja:'saida',     sales:55300, goal:55000 },
+  { id:5,  name:'Denilson', loja:'saida',     sales:49100, goal:55000 },
+  { id:6,  name:'Victor',   loja:'saida',     sales:44700, goal:55000 },
+  { id:7,  name:'Lucas',    loja:'saida',     sales:28900, goal:45000 },
+  { id:8,  name:'Higor',    loja:'rua-preta', sales:36400, goal:40000 },
+  { id:9,  name:'Wesley',   loja:'gregorio',  sales:61200, goal:60000 },
+  { id:10, name:'Thiago',   loja:'gregorio',  sales:47800, goal:60000 },
+  { id:11, name:'Jean',     loja:'gregorio',  sales:33500, goal:60000 },
+];
+
+const USERS = {
+  'vendedor@texpar.com': { name: 'Vendedor',      role: 'viewer', loja: null },
+  'centro@texpar.com':   { name: 'Admin Centro',  role: 'admin',  loja: 'centro' },
+  'saida@texpar.com':    { name: 'Admin Saída',   role: 'admin',  loja: 'saida' },
+  'ruapreta@texpar.com': { name: 'Admin Rua Preta', role: 'admin', loja: 'rua-preta' },
+  'gregorio@texpar.com': { name: 'Admin Gregório', role: 'admin', loja: 'gregorio' },
+};
+
+let activeTab   = 'all';
+let currentUser = null;
+
+function lojaInfo(id) { return LOJAS.find(l => l.id === id) || LOJAS[0]; }
+
+function init() { renderPeriod(); renderTabs(); }
+
+function renderPeriod() {
+  const now = new Date();
+  document.getElementById('header-period').textContent =
+    now.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+}
+
+// ── Login demo ────────────────────────────────────────────────────
+function demoLogin() {
+  const email = document.getElementById('demo-email').value.trim().toLowerCase();
+  const pwd   = document.getElementById('demo-pwd').value;
+  const user  = USERS[email];
+
+  if (!user || pwd !== '1234') {
+    document.getElementById('demo-pwd').style.borderColor = '#FF5252';
+    setTimeout(() => document.getElementById('demo-pwd').style.borderColor = '', 1500);
+    return;
+  }
+
+  currentUser = { ...user, email };
+  document.getElementById('login-screen').classList.add('hidden');
+  setTimeout(() => {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+  }, 400);
+
+  document.getElementById('user-name').textContent = user.name;
+  const badge = document.getElementById('user-role-badge');
+  if (user.role === 'admin') {
+    badge.textContent = 'Admin — ' + lojaInfo(user.loja).label;
+    badge.className   = 'user-role-badge role-admin';
+    document.getElementById('btn-toggle-admin').style.display = 'inline-flex';
+    renderAdminPanel();
+  } else {
+    badge.textContent = 'Visualizador';
+    badge.className   = 'user-role-badge role-viewer';
+    document.getElementById('btn-toggle-admin').style.display = 'none';
+  }
+
+  renderTabs(); renderRanking();
+}
+
+function demoLogout() {
+  currentUser = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('admin-panel').style.display = 'none';
+  document.getElementById('btn-toggle-admin').textContent = 'Editar dados ▾';
+  document.getElementById('demo-email').value = '';
+  document.getElementById('demo-pwd').value   = '';
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────
+function renderTabs() {
+  const tabs = [{ id: 'all', label: 'Geral' }, ...LOJAS.map(l => ({ id: l.id, label: l.label }))];
+  document.getElementById('tabs').innerHTML = tabs.map(t =>
+    `<button class="tab${activeTab === t.id ? ' active' : ''}" onclick="setTab('${t.id}')">${t.label}</button>`
+  ).join('');
+}
+function setTab(id) { activeTab = id; renderTabs(); renderRanking(); }
+
+// ── Ranking ───────────────────────────────────────────────────────
+function renderRanking() {
+  const el   = document.getElementById('ranking-content');
+  const list = activeTab === 'all'
+    ? [...vendors].sort((a, b) => b.sales - a.sales)
+    : vendors.filter(v => v.loja === activeTab).sort((a, b) => b.sales - a.sales);
+
+  const maxSales = Math.max(...list.map(v => v.sales), 1);
+  const top3 = list.slice(0, Math.min(3, list.length));
+  const rest  = list.slice(3);
+
+  let html = '';
+
+  // Podium
+  html += `<div class="podium-title">⬡ <span>TOP VENDEDORES DO MÊS</span> ⬡</div><div class="podium">`;
+  top3.forEach((v, i) => {
+    const rank     = i + 1;
+    const loja     = lojaInfo(v.loja);
+    const goalPct  = v.goal > 0 ? Math.round((v.sales / v.goal) * 100) : null;
+    const initials = v.name.substring(0, 2).toUpperCase();
+    const pillClass = goalPct === null ? 'near' : goalPct >= 100 ? 'above' : goalPct >= 70 ? 'near' : 'below';
+    const pillText  = goalPct !== null ? `${goalPct}% da meta` : `R$ ${v.sales.toLocaleString('pt-BR')}`;
+
+    html += `
+      <div class="p-card rank${rank}">
+        ${rank === 1 ? '<span class="crown-icon">👑</span>' : ''}
+        <div class="rank-badge">${rank}</div>
+        <div class="avatar">${initials}</div>
+        <div class="p-name">${v.name}</div>
+        <div class="p-store-tag ${loja.tag}">${loja.label}</div>
+        <div class="p-value">R$ ${v.sales.toLocaleString('pt-BR')}</div>
+        <span class="pct-pill ${pillClass}">${pillText}</span>
+      </div>`;
+  });
+  html += `</div>`;
+
+  // Rest
+  if (rest.length > 0) {
+    html += `
+      <div class="roll-divider">
+        <div class="roll-line"></div><span class="roll-icon">🧶</span>
+        <span class="roll-text">Demais vendedores</span>
+        <span class="roll-icon">🧶</span><div class="roll-line"></div>
+      </div>
+      <div class="list-header"><span>#</span><span>Vendedor</span><span>Progresso da Meta</span><span>Vendas</span></div>`;
+
+    rest.forEach((v, i) => {
+      const rank    = i + 4;
+      const loja    = lojaInfo(v.loja);
+      const goalPct = v.goal > 0 ? Math.round((v.sales / v.goal) * 100) : null;
+      const barPct  = Math.round((v.sales / maxSales) * 100);
+      const pillClass = goalPct === null ? 'near' : goalPct >= 100 ? 'above' : goalPct >= 70 ? 'near' : 'below';
+
+      html += `
+        <div class="row">
+          <div class="row-rank">${rank}°</div>
+          <div class="seller-info">
+            <span class="s-name">${v.name}</span>
+            <span class="s-tag ${loja.tag}">${loja.label}</span>
+          </div>
+          <div class="prog-col">
+            <div class="prog-meta">
+              <span>${v.goal > 0 ? 'meta R$' + v.goal.toLocaleString('pt-BR') : '—'}</span>
+              <span>${goalPct !== null ? goalPct + '%' : ''}</span>
+            </div>
+            <div class="prog-track">
+              <div class="prog-fill ${loja.fill}" style="width:${barPct}%"></div>
+            </div>
+          </div>
+          <div class="val-col">
+            <div class="v-main">R$${v.sales.toLocaleString('pt-BR')}</div>
+            ${goalPct !== null ? `<div class="v-meta"><span class="pct-pill ${pillClass}">${goalPct}%</span></div>` : ''}
+          </div>
+        </div>`;
+    });
+  }
+
+  el.innerHTML = html;
+}
+
+// ── Admin panel ───────────────────────────────────────────────────
+function toggleAdminPanel() {
+  const panel = document.getElementById('admin-panel');
+  const btn   = document.getElementById('btn-toggle-admin');
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block'; btn.textContent = 'Editar dados ▴';
+  } else {
+    panel.style.display = 'none'; btn.textContent = 'Editar dados ▾';
+  }
+}
+
+function renderAdminPanel() {
+  const loja  = lojaInfo(currentUser.loja);
+  const grupo = vendors.filter(v => v.loja === currentUser.loja);
+
+  document.getElementById('admin-panel').innerHTML = `
+    <div class="admin-panel">
+      <div class="admin-header">
+        <span class="admin-title">Atualizar Vendas e Metas</span>
+        <span class="admin-loja-badge ${loja.tag}">${loja.label}</span>
+      </div>
+      <div class="admin-grid">
+        ${grupo.map(v => `
+          <div class="admin-vendor">
+            <div class="admin-vendor-name">${v.name}</div>
+            <div class="admin-field">
+              <span class="admin-field-label">Vendas</span>
+              <input class="admin-input" type="number" min="0" id="s-${v.id}" value="${v.sales}">
+            </div>
+            <div class="admin-field">
+              <span class="admin-field-label">Meta</span>
+              <input class="admin-input" type="number" min="0" id="g-${v.id}" value="${v.goal}">
+            </div>
+          </div>`).join('')}
+      </div>
+      <button class="btn-save" onclick="salvarDemo()">Salvar</button>
+    </div>`;
+}
+
+function salvarDemo() {
+  const grupo = vendors.filter(v => v.loja === currentUser.loja);
+  grupo.forEach(v => {
+    v.sales = parseInt(document.getElementById('s-' + v.id)?.value) || 0;
+    v.goal  = parseInt(document.getElementById('g-' + v.id)?.value) || 0;
+  });
+  renderRanking();
+  document.getElementById('updated-at').textContent =
+    'Atualizado em ' + new Date().toLocaleDateString('pt-BR') + ' às ' +
+    new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  showToast('Dados salvos! ✓');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+init();
+</script>
+</body>
+</html>

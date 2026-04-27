@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Árvore de Links — Karis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --accent:        #22D3A0;
+    --accent2:       #38BDF8;
+    --accent-dark:   #1BB88A;
+    --accent-light:  rgba(34,211,160,0.12);
+    --bg:            #111116;
+    --surface:       #1A1A22;
+    --border:        rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.15);
+    --sidebar:       #0D0D12;
+    --sidebar-hover: rgba(255,255,255,0.06);
+    --sidebar-active:rgba(34,211,160,0.12);
+    --text:          #F0F0F0;
+    --text2:         #9CA3AF;
+    --text3:         #6B7280;
+    --danger:        #F87171;
+    --warn:          #FBBF24;
+    --blue:          #60A5FA;
+    --radius:        10px;
+    --radius-sm:     7px;
+    --shadow:        0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-md:     0 4px 20px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
+  }
+  html, body, #root { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Noise texture */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: .025; pointer-events: none; z-index: 9000;
+  }
+  /* Rainbow top line */
+  body::after {
+    content: '';
+    position: fixed; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, #22D3A0, #38BDF8, #818CF8, #F472B6);
+    z-index: 9002;
+  }
+  input, textarea, button { font-family: 'Inter', sans-serif; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+
+  /* Demo nav overlay */
+  .demo-nav {
+    position: fixed; top: 3px; left: 220px; right: 0; z-index: 1000;
+    background: rgba(13,13,18,0.97); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 6px; padding: 8px 20px;
+    font-size: 11px; font-weight: 500;
+  }
+  .demo-nav span { color: var(--text3); margin-right: 6px; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; }
+  .demo-tab {
+    padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text2); cursor: pointer; font-size: 11px;
+    font-weight: 500; transition: all 0.15s;
+  }
+  .demo-tab:hover { background: #22222C; color: var(--text); }
+  .demo-tab.active { background: linear-gradient(135deg,#22D3A0,#38BDF8); color: #0D0D0D; border-color: transparent; font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ─── MOCK DATA ─────────────────────────────── */
+const MOCK_SELLERS = [
+  { id: '1', name: 'Ana Costa',      whatsapp: '5511999990001', photoUrl: 'https://i.pravatar.cc/150?img=47', clicks: 342, active: true },
+  { id: '2', name: 'Bruno Lima',     whatsapp: '5511999990002', photoUrl: 'https://i.pravatar.cc/150?img=51', clicks: 287, active: true },
+  { id: '3', name: 'Carla Menezes',  whatsapp: '5511999990003', photoUrl: '',                                  clicks: 195, active: false },
+  { id: '4', name: 'Diego Rocha',    whatsapp: '5511999990004', photoUrl: 'https://i.pravatar.cc/150?img=11', clicks: 411, active: true },
+  { id: '5', name: 'Elisa Nunes',    whatsapp: '5511999990005', photoUrl: 'https://i.pravatar.cc/150?img=44', clicks: 156, active: true },
+];
+const MOCK_WEEK = [
+  { day: 'Seg', visitas: 120, cliques: 45 },
+  { day: 'Ter', visitas: 198, cliques: 82 },
+  { day: 'Qua', visitas: 153, cliques: 61 },
+  { day: 'Qui', visitas: 274, cliques: 110 },
+  { day: 'Sex', visitas: 312, cliques: 134 },
+  { day: 'Sáb', visitas: 189, cliques: 76 },
+  { day: 'Dom', visitas: 143, cliques: 58 },
+];
+const PIE_COLORS = ['#22D3A0','#38BDF8','#818CF8','#FBBF24','#F87171'];
+
+/* ─── ICONS ─────────────────────────────────── */
+const Icon = ({ name, size = 16, color = 'currentColor', style = {} }) => {
+  const p = { width: size, height: size, fill: 'none', stroke: color, strokeWidth: 1.75, strokeLinecap: 'round', strokeLinejoin: 'round', style };
+  const icons = {
+    home:     <svg {...p} viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    chart:    <svg {...p} viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+    users:    <svg {...p} viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
+    link:     <svg {...p} viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>,
+    edit:     <svg {...p} viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+    trash:    <svg {...p} viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>,
+    plus:     <svg {...p} viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+    x:        <svg {...p} viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+    eye:      <svg {...p} viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+    lock:     <svg {...p} viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>,
+    user:     <svg {...p} viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    logout:   <svg {...p} viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+    whatsapp: <svg width={size} height={size} viewBox="0 0 24 24" fill={color} style={style}><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>,
+    settings: <svg {...p} viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
+    check:    <svg {...p} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>,
+    mouse:    <svg {...p} viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="7"/><line x1="12" y1="6" x2="12" y2="10"/></svg>,
+    trending: <svg {...p} viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+    photo:    <svg {...p} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+    phone:    <svg {...p} viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 .18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>,
+    info:     <svg {...p} viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>,
+    external: <svg {...p} viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
+  };
+  return icons[name] || null;
+};
+
+/* ─── AVATAR ─────────────────────────────────── */
+const Avatar = ({ name, photoUrl, size = 36 }) => {
+  const colors = ['#22D3A0','#38BDF8','#818CF8','#FBBF24','#F87171','#34D399'];
+  const color = colors[name.charCodeAt(0) % colors.length];
+  if (photoUrl) return <img src={photoUrl} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', display: 'block' }} />;
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: `${color}22`, border: `1.5px solid ${color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: size * 0.38, color: color, flexShrink: 0, fontFamily: 'Inter' }}>
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+};
+
+/* ─── STATUS BADGE ───────────────────────────── */
+const Badge = ({ label, color = 'green', size = 'sm' }) => {
+  const colors = {
+    green:  { bg: 'rgba(34,211,160,0.1)',  text: '#22D3A0', dot: '#22D3A0' },
+    gray:   { bg: 'rgba(255,255,255,0.06)', text: '#9CA3AF', dot: '#6B7280' },
+    blue:   { bg: 'rgba(96,165,250,0.1)',  text: '#60A5FA', dot: '#60A5FA' },
+    yellow: { bg: 'rgba(251,191,36,0.1)',  text: '#FBBF24', dot: '#F59E0B' },
+    red:    { bg: 'rgba(248,113,113,0.1)', text: '#F87171', dot: '#F87171' },
+  };
+  const c = colors[color] || colors.green;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: c.bg, color: c.text, borderRadius: 20, padding: size === 'sm' ? '2px 8px' : '3px 10px', fontSize: size === 'sm' ? 11 : 12, fontWeight: 500 }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.dot, display: 'inline-block' }} />
+      {label}
+    </span>
+  );
+};
+
+/* ─── SECTION LABEL ──────────────────────────── */
+const SectionLabel = ({ children }) => (
+  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10, fontFamily: 'Barlow Condensed' }}>{children}</div>
+);
+
+/* ─── DARK BUTTON ────────────────────────────── */
+const DarkBtn = ({ children, onClick, icon, variant = 'dark', small, danger, style: s = {} }) => {
+  const [hov, setHov] = useState(false);
+  const base = {
+    display: 'inline-flex', alignItems: 'center', gap: 6,
+    padding: small ? '6px 12px' : '8px 16px',
+    borderRadius: 7, border: 'none', cursor: 'pointer',
+    fontSize: small ? 12 : 13, fontWeight: 500, transition: 'all 0.15s', ...s
+  };
+  const styles = {
+    dark:    { background: hov ? '#22222C' : '#1A1A22', color: '#F0F0F0', border: '1px solid rgba(255,255,255,0.1)' },
+    outline: { background: hov ? '#22222C' : 'transparent', color: '#9CA3AF', border: '1px solid rgba(255,255,255,0.12)' },
+    ghost:   { background: hov ? '#22222C' : 'transparent', color: '#9CA3AF', border: '1px solid transparent' },
+    accent:  { background: hov ? '#1BB88A' : '#22D3A0', color: '#0D0D0D', border: 'none' },
+    danger:  { background: hov ? '#dc2626' : 'rgba(248,113,113,0.12)', color: '#F87171', border: '1px solid rgba(248,113,113,0.25)' },
+  };
+  const chosen = danger ? styles.danger : (styles[variant] || styles.dark);
+  return (
+    <button onClick={onClick} style={{ ...base, ...chosen }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
+      {icon && <Icon name={icon} size={13} color="currentColor" />}
+      {children}
+    </button>
+  );
+};
+
+/* ─── CARD ───────────────────────────────────── */
+const Card = ({ children, style: s = {}, noPad }) => (
+  <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', padding: noPad ? 0 : 20, overflow: noPad ? 'hidden' : undefined, ...s }}>
+    {children}
+  </div>
+);
+
+/* ─── STAT CARD ──────────────────────────────── */
+const StatCard = ({ icon, label, value, delta, color }) => (
+  <Card style={{ flex: 1, minWidth: 160 }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div style={{ width: 36, height: 36, borderRadius: 8, background: `${color}18`, border: `1px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={icon} size={16} color={color} />
+      </div>
+      <Badge label={`+${delta}%`} color="green" />
+    </div>
+    <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', lineHeight: 1, marginBottom: 4 }}>{typeof value === 'number' ? value.toLocaleString('pt-BR') : value}</div>
+    <div style={{ fontSize: 12, color: 'var(--text2)' }}>{label}</div>
+  </Card>
+);
+
+/* ═══════════════════════════════════════════════
+   SVG BAR CHART
+══════════════════════════════════════════════ */
+const BarChartSVG = ({ data }) => {
+  const [tooltip, setTooltip] = useState(null);
+  const W = 540, H = 200, padL = 34, padR = 10, padT = 8, padB = 28;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const maxVal = Math.max(...data.flatMap(d => [d.visitas, d.cliques]));
+  const barGroup = plotW / data.length;
+  const barW = Math.min(18, barGroup * 0.32);
+  const gap = 4;
+  const yTicks = [0, 0.5, 1].map(t => Math.round(t * maxVal));
+  const toY = v => padT + plotH - (v / maxVal) * plotH;
+  const toXa = i => padL + i * barGroup + barGroup / 2 - barW - gap / 2;
+  const toXb = i => padL + i * barGroup + barGroup / 2 + gap / 2;
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', overflow: 'visible' }}>
+        {yTicks.map(t => <line key={t} x1={padL} x2={W - padR} y1={toY(t)} y2={toY(t)} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />)}
+        {yTicks.map(t => <text key={t} x={padL - 5} y={toY(t) + 4} textAnchor="end" fill="#6B7280" fontSize={10}>{t}</text>)}
+        {data.map((d, i) => {
+          const xa = toXa(i), xb = toXb(i);
+          const ha = (d.visitas / maxVal) * plotH, hb = (d.cliques / maxVal) * plotH;
+          const hov = tooltip?.i === i;
+          return (
+            <g key={i} onMouseEnter={() => setTooltip({ i, d })} onMouseLeave={() => setTooltip(null)} style={{ cursor: 'pointer' }}>
+              <rect x={xa} y={toY(d.visitas)} width={barW} height={ha} rx={3} fill={hov ? '#38BDF8' : '#38BDF866'} style={{ transition: 'fill 0.15s' }} />
+              <rect x={xb} y={toY(d.cliques)} width={barW} height={hb} rx={3} fill={hov ? '#22D3A0' : '#22D3A066'} style={{ transition: 'fill 0.15s' }} />
+              <text x={padL + i * barGroup + barGroup / 2} y={H - 6} textAnchor="middle" fill="#6B7280" fontSize={10}>{d.day}</text>
+            </g>
+          );
+        })}
+        {tooltip && (() => {
+          const { i, d } = tooltip;
+          const tx = Math.min(toXa(i) - 4, W - 128);
+          const ty = toY(Math.max(d.visitas, d.cliques)) - 56;
+          return (
+            <g>
+              <rect x={tx} y={ty} width={120} height={48} rx={6} fill="#1A1A22" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <text x={tx + 10} y={ty + 16} fill="#F0F0F0" fontSize={11} fontWeight="600">{d.day}</text>
+              <circle cx={tx + 14} cy={ty + 28} r={3} fill="#38BDF8" />
+              <text x={tx + 22} y={ty + 32} fill="#9CA3AF" fontSize={10}>Visitas: {d.visitas}</text>
+              <circle cx={tx + 14} cy={ty + 40} r={3} fill="#22D3A0" />
+              <text x={tx + 22} y={ty + 44} fill="#9CA3AF" fontSize={10}>Cliques: {d.cliques}</text>
+            </g>
+          );
+        })()}
+      </svg>
+      <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+        {[['#38BDF8','Visitas'],['#22D3A0','Cliques']].map(([c, l]) => (
+          <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text2)' }}>
+            <div style={{ width: 8, height: 8, borderRadius: 2, background: c }} />{l}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════
+   SVG PIE CHART
+══════════════════════════════════════════════ */
+const PieChartSVG = ({ data }) => {
+  const [hovered, setHovered] = useState(null);
+  const cx = 80, cy = 80, r = 66, ri = 42;
+  const total = data.reduce((s, d) => s + d.value, 0);
+  let angle = -Math.PI / 2;
+  const slices = data.map((d, i) => {
+    const sweep = (d.value / total) * Math.PI * 2;
+    const a0 = angle, a1 = angle + sweep; angle = a1;
+    const mid = (a0 + a1) / 2;
+    const sc = hovered === i ? 1.06 : 1;
+    const ox = (sc - 1) * Math.cos(mid) * r * 0.15;
+    const oy = (sc - 1) * Math.sin(mid) * r * 0.15;
+    const rx = cx + ox, ry = cy + oy;
+    const x0 = rx + r * Math.cos(a0), y0 = ry + r * Math.sin(a0);
+    const x1 = rx + r * Math.cos(a1), y1 = ry + r * Math.sin(a1);
+    const ix0 = rx + ri * Math.cos(a0), iy0 = ry + ri * Math.sin(a0);
+    const ix1 = rx + ri * Math.cos(a1), iy1 = ry + ri * Math.sin(a1);
+    const large = sweep > Math.PI ? 1 : 0;
+    const path = `M ${ix0} ${iy0} L ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${ix1} ${iy1} A ${ri} ${ri} 0 ${large} 0 ${ix0} ${iy0} Z`;
+    return { ...d, path, color: PIE_COLORS[i % PIE_COLORS.length], pct: Math.round(d.value / total * 100) };
+  });
+  const active = hovered !== null ? slices[hovered] : null;
+
+  return (
+    <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+      <svg viewBox="0 0 160 160" width={140} style={{ flexShrink: 0, overflow: 'visible' }}>
+        {slices.map((s, i) => (
+          <path key={i} d={s.path} fill={s.color}
+            style={{ cursor: 'pointer', opacity: hovered !== null && hovered !== i ? 0.3 : 1, transition: 'opacity 0.2s' }}
+            onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)} />
+        ))}
+        <text x={cx} y={cy - 7} textAnchor="middle" fill="#F0F0F0" fontSize={18} fontWeight="700">{active ? active.pct + '%' : total}</text>
+        <text x={cx} y={cy + 10} textAnchor="middle" fill="#6B7280" fontSize={9}>{active ? active.name : 'total'}</text>
+      </svg>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+        {slices.map((s, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, opacity: hovered !== null && hovered !== i ? 0.35 : 1, transition: 'opacity 0.2s', cursor: 'pointer' }}
+            onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+              <span style={{ color: 'var(--text2)' }}>{s.name}</span>
+            </div>
+            <span style={{ fontWeight: 600, color: 'var(--text)' }}>{s.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════
+   TELA 1: PÁGINA PÚBLICA
+══════════════════════════════════════════════ */
+const PublicPage = ({ sellers }) => {
+  const [hoveredId, setHoveredId] = useState(null);
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--bg)',
+      backgroundImage: `
+        radial-gradient(circle at 20% 20%, rgba(34,211,160,0.04) 1px, transparent 1px),
+        radial-gradient(circle at 80% 80%, rgba(56,189,248,0.03) 1px, transparent 1px),
+        linear-gradient(135deg, #0f1117 0%, #111116 40%, #0d1117 100%)
+      `,
+      backgroundSize: '40px 40px, 60px 60px, 100% 100%',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'flex-start', padding: '32px 16px 48px',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Geometric lines background */}
+      <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.04, pointerEvents: 'none' }} xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" strokeWidth="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+      </svg>
+      {/* Glow spots */}
+      <div style={{ position: 'absolute', top: '10%', left: '10%', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(34,211,160,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '15%', right: '5%', width: 250, height: 250, borderRadius: '50%', background: 'radial-gradient(circle, rgba(56,189,248,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      {/* White card */}
+      <div style={{
+        width: '100%', maxWidth: 420, position: 'relative', zIndex: 1,
+        background: 'var(--surface)', borderRadius: 24,
+        boxShadow: '0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)',
+        overflow: 'hidden',
+      }}>
+        {/* Card header */}
+        <div style={{ padding: '32px 28px 24px', textAlign: 'center', borderBottom: '1px solid var(--border)' }}>
+          {/* Logo mark */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 64, height: 64, borderRadius: '50%', background: 'rgba(34,211,160,0.1)', border: '1px solid rgba(34,211,160,0.2)', marginBottom: 18 }}>
+            <span style={{ fontFamily: 'Inter', fontWeight: 900, fontSize: 32, background: 'linear-gradient(135deg,#22D3A0,#38BDF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '-2px' }}>K</span>
+          </div>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 6, lineHeight: 1.3 }}>
+            Fale com um Especialista
+          </h1>
+          <p style={{ color: 'var(--text2)', fontSize: 13, lineHeight: 1.5 }}>
+            Escolha um consultor disponível e inicie<br/>sua conversa agora mesmo
+          </p>
+        </div>
+
+        {/* Sellers list */}
+        <div style={{ padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4, fontFamily: 'Barlow Condensed' }}>
+            Consultores disponíveis
+          </div>
+
+          {sellers.map(seller => {
+            const hov = hoveredId === seller.id;
+            return (
+              <a key={seller.id} href="#" style={{ textDecoration: 'none' }}
+                onMouseEnter={() => setHoveredId(seller.id)}
+                onMouseLeave={() => setHoveredId(null)}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  padding: '13px 16px', borderRadius: 14,
+                  border: `1.5px solid ${hov ? '#22D3A0' : 'var(--border)'}`,
+                  background: hov ? 'rgba(34,211,160,0.06)' : '#22222C',
+                  boxShadow: hov ? '0 0 0 3px rgba(34,211,160,0.08)' : 'none',
+                  transition: 'all 0.18s', cursor: 'pointer',
+                }}>
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <Avatar name={seller.name} photoUrl={seller.photoUrl} size={44} />
+                    <div style={{ position: 'absolute', bottom: 1, right: 1, width: 11, height: 11, background: '#22D3A0', borderRadius: '50%', border: '2px solid #22222C' }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 2 }}>{seller.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ width: 5, height: 5, background: '#22D3A0', borderRadius: '50%', display: 'inline-block', flexShrink: 0 }} />
+                      Online agora
+                    </div>
+                  </div>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+                    background: hov ? '#22D3A0' : '#0D0D12',
+                    borderRadius: 50, padding: '9px 16px',
+                    color: hov ? '#0D0D0D' : '#F0F0F0', fontWeight: 600, fontSize: 12,
+                    transition: 'background 0.18s',
+                  }}>
+                    <Icon name="whatsapp" size={13} color={hov ? '#0D0D0D' : '#22D3A0'} />
+                    Falar
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+
+        {/* Card footer */}
+        <div style={{ borderTop: '1px solid var(--border)', padding: '14px 28px', textAlign: 'center' }}>
+          <div style={{ fontSize: 11, color: 'var(--text3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <div style={{ width: 16, height: 16, borderRadius: 5, background: 'linear-gradient(135deg,#22D3A0,#38BDF8)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ color: '#0D0D0D', fontWeight: 800, fontSize: 8 }}>K</span>
+            </div>
+            Powered by <strong style={{ color: 'var(--text2)', fontWeight: 600 }}>Karis Soluções Inteligentes</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════
+   TELA 2: LOGIN
+══════════════════════════════════════════════ */
+const LoginPage = ({ onLogin }) => {
+  const [user, setUser] = useState('');
+  const [pass, setPass] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [focused, setFocused] = useState('');
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    setLoading(true);
+    setTimeout(() => { setLoading(false); onLogin(); }, 800);
+  };
+
+  const inp = field => ({
+    width: '100%', background: '#22222C',
+    border: `1px solid ${focused === field ? '#22D3A0' : 'var(--border)'}`,
+    borderRadius: 7, padding: '10px 14px 10px 38px',
+    color: 'var(--text)', fontSize: 13, outline: 'none',
+    boxShadow: focused === field ? '0 0 0 3px rgba(34,211,160,0.12)' : 'none',
+    transition: 'all 0.15s',
+  });
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', background: 'var(--bg)' }}>
+      {/* Left brand panel */}
+      <div style={{ width: 320, background: 'var(--sidebar)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, flexShrink: 0, borderRight: '1px solid var(--border)' }}>
+        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(34,211,160,0.12)', border: '1px solid rgba(34,211,160,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+          <span style={{ background: 'linear-gradient(135deg,#22D3A0,#38BDF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 800, fontSize: 24 }}>K</span>
+        </div>
+        <h2 style={{ color: 'var(--text)', fontWeight: 700, fontSize: 18, textAlign: 'center', marginBottom: 8 }}>Karis Soluções Inteligentes</h2>
+        <p style={{ color: 'var(--text2)', fontSize: 13, textAlign: 'center', lineHeight: 1.6 }}>Plataforma de gestão de atendimento e vendas</p>
+        <div style={{ marginTop: 40, display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+          {['Árvore de Links', 'Dashboard de métricas', 'Gestão de vendedores'].map(f => (
+            <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--text2)' }}>
+              <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'rgba(34,211,160,0.12)', border: '1px solid rgba(34,211,160,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon name="check" size={9} color="#22D3A0" />
+              </div>
+              {f}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right form */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+        <div style={{ width: '100%', maxWidth: 360 }}>
+          <div style={{ marginBottom: 28 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Área Administrativa</h1>
+            <p style={{ color: 'var(--text2)', fontSize: 13 }}>Acesse o painel com suas credenciais</p>
+          </div>
+
+          <Card>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--text2)', marginBottom: 6 }}>Usuário</label>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: focused === 'user' ? '#22D3A0' : 'var(--text3)', transition: 'color 0.15s' }}>
+                    <Icon name="user" size={14} />
+                  </div>
+                  <input type="text" value={user} onChange={e => setUser(e.target.value)}
+                    onFocus={() => setFocused('user')} onBlur={() => setFocused('')}
+                    placeholder="admin" style={inp('user')} required />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--text2)', marginBottom: 6 }}>Senha</label>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: focused === 'pass' ? '#22D3A0' : 'var(--text3)', transition: 'color 0.15s' }}>
+                    <Icon name="lock" size={14} />
+                  </div>
+                  <input type={showPass ? 'text' : 'password'} value={pass} onChange={e => setPass(e.target.value)}
+                    onFocus={() => setFocused('pass')} onBlur={() => setFocused('')}
+                    placeholder="••••••••" style={{ ...inp('pass'), paddingRight: 38 }} required />
+                  <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 0 }}>
+                    <Icon name="eye" size={14} />
+                  </button>
+                </div>
+              </div>
+              <button type="submit" disabled={loading} style={{
+                width: '100%', padding: '10px', borderRadius: 7, border: 'none',
+                background: loading ? 'rgba(34,211,160,0.3)' : 'linear-gradient(135deg,#22D3A0,#38BDF8)',
+                color: loading ? 'var(--text3)' : '#0D0D0D',
+                fontWeight: 600, fontSize: 13, cursor: loading ? 'default' : 'pointer',
+                transition: 'all 0.15s', marginTop: 4,
+              }}>
+                {loading ? 'Verificando...' : 'Entrar no Painel'}
+              </button>
+            </form>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════
+   DASHBOARD TAB
+══════════════════════════════════════════════ */
+const DashboardTab = ({ sellers, weekData }) => {
+  const pieData = sellers.map(s => ({ name: s.name.split(' ')[0], value: s.clicks }));
+  const totalVisits = weekData.reduce((s, d) => s + d.visitas, 0);
+  const totalClicks = weekData.reduce((s, d) => s + d.cliques, 0);
+
+  return (
+    <div>
+      {/* Stat cards */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+        <StatCard icon="eye" label="Visitas na página (7 dias)" value={totalVisits} delta={12} color="#38BDF8" />
+        <StatCard icon="mouse" label="Cliques em vendedores (7 dias)" value={totalClicks} delta={8} color="#22D3A0" />
+        <StatCard icon="trending" label="Taxa de conversão" value={`${Math.round(totalClicks / totalVisits * 100)}%`} delta={3} color="#818CF8" />
+        <StatCard icon="users" label="Vendedores ativos" value={sellers.filter(s => s.active).length} delta={0} color="#FBBF24" />
+      </div>
+
+      {/* Charts */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 12 }}>
+        <Card>
+          <div style={{ marginBottom: 16 }}>
+            <SectionLabel>Atividade dos últimos 7 dias</SectionLabel>
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Visitas vs Cliques</h3>
+          </div>
+          <BarChartSVG data={weekData} />
+        </Card>
+        <Card>
+          <div style={{ marginBottom: 16 }}>
+            <SectionLabel>Distribuição</SectionLabel>
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Cliques por vendedor</h3>
+          </div>
+          <PieChartSVG data={pieData} />
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════
+   SELLER MODAL
+══════════════════════════════════════════════ */
+const SellerModal = ({ seller, onSave, onClose }) => {
+  const [form, setForm] = useState(seller || { name: '', whatsapp: '', photoUrl: '', active: true });
+  const [focused, setFocused] = useState('');
+  const isEdit = !!seller;
+
+  const inp = field => ({
+    width: '100%', background: '#22222C',
+    border: `1px solid ${focused === field ? '#22D3A0' : 'var(--border)'}`,
+    borderRadius: 7, padding: '9px 12px 9px 36px',
+    color: 'var(--text)', fontSize: 13, outline: 'none',
+    boxShadow: focused === field ? '0 0 0 3px rgba(34,211,160,0.1)' : 'none',
+    transition: 'all 0.15s',
+  });
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
+      <div style={{ position: 'relative', width: '100%', maxWidth: 460, background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,0.5)', zIndex: 1 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px', borderBottom: '1px solid var(--border)' }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{isEdit ? 'Editar Vendedor' : 'Novo Vendedor'}</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex' }}>
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: 20 }}>
+          {/* Preview */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 14, background: '#22222C', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 18 }}>
+            <Avatar name={form.name || 'N'} photoUrl={form.photoUrl} size={44} />
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14, color: form.name ? 'var(--text)' : 'var(--text3)' }}>{form.name || 'Nome do vendedor'}</div>
+              <div style={{ fontSize: 11, color: 'var(--text3)' }}>Preview do card</div>
+            </div>
+            <div style={{ marginLeft: 'auto' }}>
+              <Badge label={form.active ? 'Ativo' : 'Inativo'} color={form.active ? 'green' : 'gray'} />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {[
+              { field: 'name', label: 'Nome Completo', icon: 'user', placeholder: 'Ex: Ana Costa' },
+              { field: 'whatsapp', label: 'Número WhatsApp', icon: 'phone', placeholder: '5511999990000' },
+              { field: 'photoUrl', label: 'URL da Foto (opcional)', icon: 'photo', placeholder: 'https://...' },
+            ].map(({ field, label, icon, placeholder }) => (
+              <div key={field}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--text2)', marginBottom: 6 }}>{label}</label>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: focused === field ? '#22D3A0' : 'var(--text3)', transition: 'color 0.15s' }}>
+                    <Icon name={icon} size={14} />
+                  </div>
+                  <input value={form[field]} onChange={e => setForm({ ...form, [field]: e.target.value })}
+                    onFocus={() => setFocused(field)} onBlur={() => setFocused('')}
+                    placeholder={placeholder} style={inp(field)} />
+                </div>
+              </div>
+            ))}
+            {/* Toggle ativo */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderTop: '1px solid var(--border)' }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text2)' }}>Vendedor ativo na página pública</span>
+              <button onClick={() => setForm({ ...form, active: !form.active })} style={{
+                width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer',
+                background: form.active ? '#22D3A0' : '#2C2C3A', transition: 'background 0.2s',
+                position: 'relative',
+              }}>
+                <div style={{ position: 'absolute', top: 3, left: form.active ? 20 : 3, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: 'flex', gap: 8, padding: '16px 20px', borderTop: '1px solid var(--border)', justifyContent: 'flex-end' }}>
+          <DarkBtn variant="outline" onClick={onClose}>Cancelar</DarkBtn>
+          <DarkBtn variant="accent" onClick={() => onSave(form)} icon="check">{isEdit ? 'Salvar Alterações' : 'Cadastrar Vendedor'}</DarkBtn>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════
+   SELLERS TAB
+══════════════════════════════════════════════ */
+const SellersTab = ({ sellers, setSellers }) => {
+  const [modal, setModal] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const showToast = msg => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  const handleSave = form => {
+    if (modal === 'new') {
+      setSellers(prev => [...prev, { ...form, id: Date.now().toString(), clicks: 0 }]);
+      showToast('Vendedor cadastrado com sucesso!');
+    } else {
+      setSellers(prev => prev.map(s => s.id === modal.id ? { ...s, ...form } : s));
+      showToast('Dados atualizados!');
+    }
+    setModal(null);
+  };
+
+  const handleDelete = id => {
+    setSellers(prev => prev.filter(s => s.id !== id));
+    setDeleteId(null);
+    showToast('Vendedor removido.');
+  };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 10000, background: 'var(--surface)', color: 'var(--text)', borderRadius: 8, padding: '10px 16px', fontWeight: 500, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', border: '1px solid var(--border-strong)' }}>
+          <Icon name="check" size={14} color="#22D3A0" /> {toast}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div>
+          <SectionLabel>Gerenciamento</SectionLabel>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{sellers.length} vendedor{sellers.length !== 1 ? 'es' : ''} cadastrado{sellers.length !== 1 ? 's' : ''}</h2>
+        </div>
+        <DarkBtn variant="accent" icon="plus" onClick={() => setModal('new')}>Novo Vendedor</DarkBtn>
+      </div>
+
+      {/* Table */}
+      <Card noPad>
+        {/* thead */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 90px 80px 72px', gap: 0, padding: '10px 18px', borderBottom: '1px solid var(--border)', background: '#22222C' }}>
+          {['Vendedor', 'WhatsApp', 'Cliques', 'Status', ''].map((h, i) => (
+            <div key={i} style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Barlow Condensed' }}>{h}</div>
+          ))}
+        </div>
+
+        {sellers.map((seller, i) => (
+          <div key={seller.id} style={{
+            display: 'grid', gridTemplateColumns: '2fr 1.5fr 90px 80px 72px', gap: 0,
+            alignItems: 'center', padding: '12px 18px',
+            borderBottom: i < sellers.length - 1 ? '1px solid var(--border)' : 'none',
+            background: 'transparent', transition: 'background 0.1s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = '#22222C'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Avatar name={seller.name} photoUrl={seller.photoUrl} size={34} />
+              <div>
+                <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--text)' }}>{seller.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--text3)' }}>ID #{seller.id}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text2)' }}>
+              <Icon name="whatsapp" size={13} color="#22D3A0" />+{seller.whatsapp}
+            </div>
+            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{seller.clicks.toLocaleString('pt-BR')}</div>
+            <div><Badge label={seller.active ? 'Ativo' : 'Inativo'} color={seller.active ? 'green' : 'gray'} /></div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => setModal(seller)} title="Editar" style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', transition: 'all 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(56,189,248,0.1)'; e.currentTarget.style.color = '#38BDF8'; e.currentTarget.style.borderColor = 'rgba(56,189,248,0.3)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
+                <Icon name="edit" size={13} />
+              </button>
+              <button onClick={() => setDeleteId(seller.id)} title="Excluir" style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', transition: 'all 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; e.currentTarget.style.color = '#F87171'; e.currentTarget.style.borderColor = 'rgba(248,113,113,0.3)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
+                <Icon name="trash" size={13} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </Card>
+
+      {modal && <SellerModal seller={modal === 'new' ? null : modal} onSave={handleSave} onClose={() => setModal(null)} />}
+
+      {deleteId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }} onClick={() => setDeleteId(null)} />
+          <Card style={{ position: 'relative', maxWidth: 360, width: '100%', textAlign: 'center', zIndex: 1, padding: 28, border: '1px solid var(--border-strong)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+              <Icon name="trash" size={18} color="#F87171" />
+            </div>
+            <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, color: 'var(--text)' }}>Excluir Vendedor?</h3>
+            <p style={{ color: 'var(--text2)', fontSize: 13, marginBottom: 20 }}>Esta ação não pode ser desfeita. O vendedor será removido permanentemente.</p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <DarkBtn variant="outline" onClick={() => setDeleteId(null)}>Cancelar</DarkBtn>
+              <DarkBtn danger onClick={() => handleDelete(deleteId)}>Excluir</DarkBtn>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════
+   ADMIN LAYOUT
+══════════════════════════════════════════════ */
+const AdminLayout = ({ sellers, setSellers, onLogout, initialTab = 'dashboard' }) => {
+  const [tab, setTab] = useState(initialTab);
+
+  useEffect(() => { setTab(initialTab); }, [initialTab]);
+
+  const navItems = [
+    { id: 'dashboard', icon: 'chart', label: 'Dashboard' },
+    { id: 'sellers',   icon: 'users', label: 'Vendedores' },
+  ];
+
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Sidebar */}
+      <aside style={{
+        width: 220, flexShrink: 0, background: 'var(--sidebar)',
+        borderRight: '1px solid var(--border)',
+        display: 'flex', flexDirection: 'column',
+        position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 100,
+        boxShadow: '1px 0 0 var(--border)',
+      }}>
+        {/* Logo */}
+        <div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg,#22D3A0,#38BDF8)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <span style={{ color: '#0D0D0D', fontWeight: 800, fontSize: 15 }}>K</span>
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)', lineHeight: 1.1 }}>Karis</div>
+            <div style={{ fontSize: 10, color: 'var(--text3)', lineHeight: 1.1 }}>Soluções Inteligentes</div>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav style={{ flex: 1, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {navItems.map(item => {
+            const active = tab === item.id;
+            return (
+              <button key={item.id} onClick={() => setTab(item.id)} style={{
+                display: 'flex', alignItems: 'center', gap: 11,
+                width: '100%', padding: '9px 12px',
+                borderRadius: 8, border: 'none', cursor: 'pointer',
+                background: active ? 'var(--sidebar-active)' : 'transparent',
+                color: active ? '#22D3A0' : 'var(--text2)',
+                fontWeight: active ? 600 : 400,
+                fontSize: 13, textAlign: 'left',
+                position: 'relative',
+                borderRight: active ? '3px solid #22D3A0' : '3px solid transparent',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--sidebar-hover)'; e.currentTarget.style.color = 'var(--text)'; } }}
+              onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text2)'; } }}
+              >
+                <Icon name={item.icon} size={17} color={active ? '#22D3A0' : 'var(--text3)'} />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Bottom */}
+        <div style={{ padding: '10px 10px 16px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <button onClick={onLogout} style={{
+            display: 'flex', alignItems: 'center', gap: 11,
+            width: '100%', padding: '9px 12px', borderRadius: 8,
+            border: 'none', cursor: 'pointer', background: 'transparent',
+            color: 'var(--text3)', fontSize: 13, fontWeight: 400, textAlign: 'left',
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.08)'; e.currentTarget.style.color = '#F87171'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text3)'; }}>
+            <Icon name="logout" size={16} color="currentColor" /> Sair
+          </button>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div style={{ marginLeft: 220, flex: 1 }}>
+        {/* Top bar */}
+        <header style={{ height: 48, background: 'rgba(13,13,18,0.97)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', paddingLeft: 20, paddingRight: 20, gap: 8, position: 'sticky', top: 0, zIndex: 50 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12, color: 'var(--text3)' }}>Árvore de Links</span>
+            <span style={{ color: 'var(--text3)' }}>·</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{tab === 'dashboard' ? 'Dashboard' : 'Vendedores'}</span>
+          </div>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Badge label="Ativo" color="green" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 10, borderLeft: '1px solid var(--border)' }}>
+              <Avatar name="Admin" photoUrl="" size={26} />
+              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text2)' }}>Admin</span>
+            </div>
+          </div>
+        </header>
+
+        {/* Content */}
+        <main style={{ padding: 24 }}>
+          {/* Page title */}
+          <div style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>
+              {tab === 'dashboard' ? 'Dashboard' : 'Gerenciar Vendedores'}
+            </h2>
+            <p style={{ color: 'var(--text2)', fontSize: 13 }}>
+              {tab === 'dashboard' ? 'Visão geral de desempenho da página' : 'Adicione, edite e organize sua equipe de vendas'}
+            </p>
+          </div>
+
+          {tab === 'dashboard'
+            ? <DashboardTab sellers={sellers} weekData={MOCK_WEEK} />
+            : <SellersTab sellers={sellers} setSellers={setSellers} />
+          }
+        </main>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════
+   APP ROOT
+══════════════════════════════════════════════ */
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accentColor": "#22D3A0",
+  "brandName": "Karis Soluções Inteligentes",
+  "companyInitial": "K"
+}/*EDITMODE-END*/;
+
+const App = () => {
+  const [screen, setScreen] = useState(() => localStorage.getItem('karis_screen') || 'public');
+  const [sellers, setSellers] = useState(MOCK_SELLERS);
+  const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
+  const [showTweaks, setShowTweaks] = useState(false);
+
+  useEffect(() => { localStorage.setItem('karis_screen', screen); }, [screen]);
+
+  useEffect(() => {
+    const handler = e => {
+      if (e.data?.type === '__activate_edit_mode') setShowTweaks(true);
+      if (e.data?.type === '__deactivate_edit_mode') setShowTweaks(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const updateTweak = (key, val) => {
+    const next = { ...tweaks, [key]: val };
+    setTweaks(next);
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: next }, '*');
+    if (key === 'accentColor') document.documentElement.style.setProperty('--accent', val);
+  };
+
+  const demoScreens = [
+    { id: 'public',    label: 'Página Pública' },
+    { id: 'login',     label: 'Login Admin' },
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'sellers',   label: 'Vendedores' },
+  ];
+
+  return (
+    <div>
+      {/* Demo nav */}
+      <div className="demo-nav">
+        <span>Telas:</span>
+        {demoScreens.map(s => (
+          <button key={s.id} className={`demo-tab ${screen === s.id ? 'active' : ''}`} onClick={() => setScreen(s.id)}>{s.label}</button>
+        ))}
+      </div>
+
+      <div style={{ paddingTop: screen === 'public' || screen === 'login' ? 40 : 0, paddingLeft: (screen === 'dashboard' || screen === 'sellers') ? 0 : 0 }}>
+        {screen === 'public' && <PublicPage sellers={sellers.filter(s => s.active)} />}
+        {screen === 'login' && <LoginPage onLogin={() => setScreen('dashboard')} />}
+        {(screen === 'dashboard' || screen === 'sellers') && (
+          <AdminLayout sellers={sellers} setSellers={setSellers} onLogout={() => setScreen('login')} initialTab={screen} />
+        )}
+      </div>
+
+      {/* Tweaks panel */}
+      {showTweaks && (
+        <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 10001, width: 260, background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 12, padding: 16, boxShadow: 'var(--shadow-md)' }}>
+          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 14, color: 'var(--text)' }}>Tweaks</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <label style={{ fontSize: 11, color: 'var(--text3)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Cor de destaque</label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {['#22D3A0','#38BDF8','#818CF8','#FBBF24','#F87171','#0ea5e9'].map(c => (
+                  <button key={c} onClick={() => updateTweak('accentColor', c)} style={{ width: 24, height: 24, borderRadius: 6, background: c, border: tweaks.accentColor === c ? '2px solid #F0F0F0' : '2px solid transparent', cursor: 'pointer' }} />
+                ))}
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: 11, color: 'var(--text3)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Nome da empresa</label>
+              <input value={tweaks.brandName} onChange={e => updateTweak('brandName', e.target.value)} style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 7, padding: '7px 10px', fontSize: 12, outline: 'none', color: 'var(--text)', background: '#22222C' }} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<template id="__bundler_thumbnail">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 140">
+    <rect width="200" height="140" fill="#111116"/>
+    <rect x="0" y="0" width="28" height="140" fill="#0D0D12"/>
+    <rect x="8" y="8" width="12" height="12" rx="3" fill="#22D3A0"/>
+    <rect x="28" y="0" width="172" height="32" fill="#1A1A22" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <rect x="40" y="48" width="50" height="36" rx="6" fill="#1A1A22" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <rect x="100" y="48" width="50" height="36" rx="6" fill="#1A1A22" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <rect x="160" y="48" width="32" height="36" rx="6" fill="#1A1A22" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <rect x="40" y="94" width="152" height="40" rx="6" fill="#1A1A22" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+  </svg>
+</template>
+</body>
+</html>
